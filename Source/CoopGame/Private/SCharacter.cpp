@@ -2,10 +2,12 @@
 
 #include "SCharacter.h"
 #include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 
 ASCharacter::ASCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	SetupSpringArmComponent();
 	SetupCameraComponent();
 }
 
@@ -41,8 +43,15 @@ void ASCharacter::MoveRight(float MovementValue)
 	AddMovementInput(GetActorRightVector() * MovementValue);
 }
 
+void ASCharacter::SetupSpringArmComponent()
+{
+	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
+	SpringArmComponent->SetupAttachment(RootComponent);
+	SpringArmComponent->bUsePawnControlRotation = true;
+}
+
 void ASCharacter::SetupCameraComponent()
 {
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	CameraComponent->bUsePawnControlRotation = true;
+	CameraComponent->SetupAttachment(SpringArmComponent);
 }
