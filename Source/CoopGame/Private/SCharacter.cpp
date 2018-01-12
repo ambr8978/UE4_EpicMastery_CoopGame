@@ -3,18 +3,48 @@
 #include "SCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/PawnMovementComponent.h"
 
 ASCharacter::ASCharacter()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	EnableTicking();
 	SetupSpringArmComponent();
 	SetupCameraComponent();
+}
+
+void ASCharacter::EnableTicking()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
+
+void ASCharacter::SetupSpringArmComponent()
+{
+	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
+	SpringArmComponent->SetupAttachment(RootComponent);
+	SpringArmComponent->bUsePawnControlRotation = true;
+}
+
+void ASCharacter::SetupCameraComponent()
+{
+	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
+	CameraComponent->SetupAttachment(SpringArmComponent);
+}
+
+void ASCharacter::EnableCrouching()
+{
+	/*
+	Yes, this code is weird.
+	NavAgentProperties is usually used for AI, but since parts of Unreal are coded very uncleanly and
+	with weird dependencies, the engine code still gets around to checking this variable when we try 
+	to crouch.
+	*/
+	GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
 }
 
 void ASCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	EnableCrouching();
 }
 
 void ASCharacter::Tick(float DeltaTime)
@@ -31,6 +61,9 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	PlayerInputComponent->BindAxis("LookUp", this, &ASCharacter::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("Turn", this, &ASCharacter::AddControllerYawInput);
+
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &ASCharacter::BeginCrouch);
+	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &ASCharacter::EndCrouch);
 }
 
 void ASCharacter::MoveForward(float MovementValue)
@@ -43,15 +76,13 @@ void ASCharacter::MoveRight(float MovementValue)
 	AddMovementInput(GetActorRightVector() * MovementValue);
 }
 
-void ASCharacter::SetupSpringArmComponent()
+void ASCharacter::BeginCrouch()
 {
-	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
-	SpringArmComponent->SetupAttachment(RootComponent);
-	SpringArmComponent->bUsePawnControlRotation = true;
+	Crouch();
 }
 
-void ASCharacter::SetupCameraComponent()
+void ASCharacter::EndCrouch()
 {
-	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	CameraComponent->SetupAttachment(SpringArmComponent);
+	UnCrouch();
 }
+

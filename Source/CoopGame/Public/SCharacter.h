@@ -35,6 +35,11 @@ protected:
 	void MoveForward(float MovementValue);
 	void MoveRight(float MovementValue);
 
+	void BeginCrouch();
+	void EndCrouch();
+
+	void EnableTicking();
 	void SetupSpringArmComponent();
+	void EnableCrouching();
 	void SetupCameraComponent();
 };
