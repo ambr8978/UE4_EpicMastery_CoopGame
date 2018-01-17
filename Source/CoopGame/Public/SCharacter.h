@@ -32,6 +32,8 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	virtual FVector GetPawnViewLocation() const override;
+
 	void MoveForward(float MovementValue);
 	void MoveRight(float MovementValue);
 

@@ -26,7 +26,7 @@ protected:
 	USkeletalMeshComponent* MeshComponent;
 	
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void Fire();
+	void Fire();	
 
 private:
 	FCollisionQueryParams GetLineTraceCollisionQueryParams(AActor* OwnerActor);

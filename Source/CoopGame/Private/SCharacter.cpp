@@ -50,7 +50,21 @@ void ASCharacter::BeginPlay()
 void ASCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
 
+FVector ASCharacter::GetPawnViewLocation() const
+{
+	/*
+	We use the camera location as our pawn view location so that
+	our weapon line trace (which is based off our pawn's eye location)
+	is more accurate to what the player would expect.
+	*/
+	if (CameraComponent)
+	{
+		return CameraComponent->GetComponentLocation();
+	}
+
+	return Super::GetPawnViewLocation();
 }
 
 void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
