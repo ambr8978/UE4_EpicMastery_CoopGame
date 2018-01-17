@@ -25,4 +25,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USkeletalMeshComponent* MeshComponent;
 	
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void Fire();
+
+private:
+	FCollisionQueryParams GetLineTraceCollisionQueryParams(AActor* OwnerActor);
+	void LineTraceAndProcessDamage(AActor* OwnerActor);
 };
