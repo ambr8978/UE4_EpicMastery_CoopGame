@@ -5,6 +5,7 @@
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/DamageType.h"
+#include "Particles/ParticleSystem.h"
 
 const int LINE_TRACE_LENGTH = 10000;
 const FColor LINE_TRACE_COLOR = FColor::White;
@@ -21,6 +22,8 @@ ASWeapon::ASWeapon()
 
 	MeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MeshComp"));
 	RootComponent = MeshComponent;
+
+	MuzzleSocketName = "MuzzleSocket";
 }
 
 void ASWeapon::BeginPlay()
@@ -36,7 +39,7 @@ void ASWeapon::Tick(float DeltaTime)
 }
 
 /*
-There is a lot of object creation and calculation that takes place in this function. 
+There is a lot of object creation and calculation that takes place in this function.
 Seems like this function is an obvious candidate for optimization.
 */
 void ASWeapon::Fire()
@@ -44,7 +47,7 @@ void ASWeapon::Fire()
 	AActor* MyOwner = GetOwner();
 	if (MyOwner)
 	{
-		LineTraceAndProcessDamage(MyOwner);		
+		ProcessLineTrace(MyOwner);
 	}
 
 }
@@ -64,7 +67,7 @@ FCollisionQueryParams ASWeapon::GetLineTraceCollisionQueryParams(AActor* OwnerAc
 	return QueryParams;
 }
 
-void ASWeapon::LineTraceAndProcessDamage(AActor* OwnerActor)
+void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
 {
 	FVector EyeLocation;
 	FRotator EyeRotation;
@@ -76,10 +79,28 @@ void ASWeapon::LineTraceAndProcessDamage(AActor* OwnerActor)
 	bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(HitResult, EyeLocation, TraceEnd, ECC_Visibility, GetLineTraceCollisionQueryParams(OwnerActor));
 	if (bBlockingHit)
 	{
-		//process damage.
 		ProcessDamage(HitResult, ShotDirection, OwnerActor->GetInstigatorController());
+		SpawnHitEffects(HitResult);
 	}
 
+	SpawnShotEffects(EyeLocation, TraceEnd);
+}
+
+void ASWeapon::ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController)
+{
+	AActor* HitActor = HitResult.GetActor();
+	UGameplayStatics::ApplyPointDamage(
+		HitActor,
+		DAMAGE_AMOUNT,
+		ShotDirection,
+		HitResult,
+		InstigatorController,
+		this,
+		DamageType);
+}
+
+void ASWeapon::SpawnShotEffects(FVector EyeLocation, FVector TraceEnd)
+{
 	DrawDebugLine(
 		GetWorld(),
 		EyeLocation,
@@ -89,17 +110,23 @@ void ASWeapon::LineTraceAndProcessDamage(AActor* OwnerActor)
 		LINE_TRACE_LIFETIME_SEC,
 		LINE_TRACE_DEPTH_PRIORITY,
 		LINE_TRACE_THICKNESS);
+
+
+	if (MuzzleEffect)
+	{
+		UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, MeshComponent, MuzzleSocketName);
+	}
 }
 
-void ASWeapon::ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController)
+void ASWeapon::SpawnHitEffects(FHitResult HitResult)
 {
-	AActor* HitActor = HitResult.GetActor();
-	UGameplayStatics::ApplyPointDamage(
-		HitActor,
-		DAMAGE_AMOUNT, 
-		ShotDirection, 
-		HitResult, 
-		InstigatorController, 
-		this, 
-		DamageType);
+	if (ImpactEffect)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			ImpactEffect,
+			HitResult.ImpactPoint,
+			HitResult.ImpactNormal.Rotation()
+		);
+	}
 }
