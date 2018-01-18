@@ -7,6 +7,7 @@
 #include "SWeapon.generated.h"
 
 class USkeletalMeshComponent;
+class UDamageType;
 
 UCLASS()
 class COOPGAME_API ASWeapon : public AActor
@@ -15,8 +16,6 @@ class COOPGAME_API ASWeapon : public AActor
 	
 public:	
 	ASWeapon();
-
-public:	
 	virtual void Tick(float DeltaTime) override;
 
 protected:
@@ -25,10 +24,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USkeletalMeshComponent* MeshComponent;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TSubclassOf<UDamageType> DamageType;
+
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	void Fire();	
 
 private:
+
 	FCollisionQueryParams GetLineTraceCollisionQueryParams(AActor* OwnerActor);
 	void LineTraceAndProcessDamage(AActor* OwnerActor);
+	void ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController);
 };

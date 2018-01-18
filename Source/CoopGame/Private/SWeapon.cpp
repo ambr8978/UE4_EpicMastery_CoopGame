@@ -3,6 +3,8 @@
 #include "SWeapon.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/DamageType.h"
 
 const int LINE_TRACE_LENGTH = 10000;
 const FColor LINE_TRACE_COLOR = FColor::White;
@@ -10,6 +12,8 @@ const float LINE_TRACE_LIFETIME_SEC = 1.0f;
 const bool LINE_TRACE_PERSISTENT = false;
 const int LINE_TRACE_DEPTH_PRIORITY = 0;
 const float LINE_TRACE_THICKNESS = 1.0f;
+
+const float DAMAGE_AMOUNT = 20.0f;
 
 ASWeapon::ASWeapon()
 {
@@ -65,13 +69,15 @@ void ASWeapon::LineTraceAndProcessDamage(AActor* OwnerActor)
 	FVector EyeLocation;
 	FRotator EyeRotation;
 	OwnerActor->GetActorEyesViewPoint(EyeLocation, EyeRotation);
-	FVector TraceEnd = EyeLocation + (EyeRotation.Vector() * LINE_TRACE_LENGTH);
+	FVector ShotDirection = EyeRotation.Vector();
+	FVector TraceEnd = EyeLocation + (ShotDirection * LINE_TRACE_LENGTH);
 
 	FHitResult HitResult;
 	bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(HitResult, EyeLocation, TraceEnd, ECC_Visibility, GetLineTraceCollisionQueryParams(OwnerActor));
 	if (bBlockingHit)
 	{
 		//process damage.
+		ProcessDamage(HitResult, ShotDirection, OwnerActor->GetInstigatorController());
 	}
 
 	DrawDebugLine(
@@ -83,4 +89,17 @@ void ASWeapon::LineTraceAndProcessDamage(AActor* OwnerActor)
 		LINE_TRACE_LIFETIME_SEC,
 		LINE_TRACE_DEPTH_PRIORITY,
 		LINE_TRACE_THICKNESS);
+}
+
+void ASWeapon::ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController)
+{
+	AActor* HitActor = HitResult.GetActor();
+	UGameplayStatics::ApplyPointDamage(
+		HitActor,
+		DAMAGE_AMOUNT, 
+		ShotDirection, 
+		HitResult, 
+		InstigatorController, 
+		this, 
+		DamageType);
 }
