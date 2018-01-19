@@ -32,6 +32,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	UParticleSystem* MuzzleEffect;
 
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	FName TracerTargetName;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	UParticleSystem* TracerEffect;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	UParticleSystem* ImpactEffect;
 	
@@ -47,4 +53,6 @@ private:
 
 	void SpawnShotEffects(FVector EyeLocation, FVector TraceEnd);
 	void SpawnHitEffects(FHitResult HitResult);
+	void SpawnMuzzleEffect();
+	void SpawnTraceEffect(FVector TraceEndPoint);
 };

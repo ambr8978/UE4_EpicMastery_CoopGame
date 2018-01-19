@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/DamageType.h"
 #include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
 
 const int LINE_TRACE_LENGTH = 10000;
 const FColor LINE_TRACE_COLOR = FColor::White;
@@ -24,6 +25,7 @@ ASWeapon::ASWeapon()
 	RootComponent = MeshComponent;
 
 	MuzzleSocketName = "MuzzleSocket";
+	TracerTargetName = "Target";
 }
 
 void ASWeapon::BeginPlay()
@@ -74,16 +76,18 @@ void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
 	OwnerActor->GetActorEyesViewPoint(EyeLocation, EyeRotation);
 	FVector ShotDirection = EyeRotation.Vector();
 	FVector TraceEnd = EyeLocation + (ShotDirection * LINE_TRACE_LENGTH);
+	FVector TraceEndPoint = TraceEnd;
 
 	FHitResult HitResult;
 	bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(HitResult, EyeLocation, TraceEnd, ECC_Visibility, GetLineTraceCollisionQueryParams(OwnerActor));
 	if (bBlockingHit)
 	{
+		TraceEndPoint = HitResult.ImpactPoint;
 		ProcessDamage(HitResult, ShotDirection, OwnerActor->GetInstigatorController());
 		SpawnHitEffects(HitResult);
 	}
 
-	SpawnShotEffects(EyeLocation, TraceEnd);
+	SpawnShotEffects(EyeLocation, TraceEndPoint);
 }
 
 void ASWeapon::ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController)
@@ -99,22 +103,44 @@ void ASWeapon::ProcessDamage(FHitResult HitResult, FVector ShotDirection, AContr
 		DamageType);
 }
 
-void ASWeapon::SpawnShotEffects(FVector EyeLocation, FVector TraceEnd)
+void ASWeapon::SpawnShotEffects(FVector EyeLocation, FVector TraceEndPoint)
 {
 	DrawDebugLine(
 		GetWorld(),
 		EyeLocation,
-		TraceEnd,
+		TraceEndPoint,
 		LINE_TRACE_COLOR,
 		LINE_TRACE_PERSISTENT,
 		LINE_TRACE_LIFETIME_SEC,
 		LINE_TRACE_DEPTH_PRIORITY,
 		LINE_TRACE_THICKNESS);
 
+	SpawnMuzzleEffect();
+	SpawnTraceEffect(TraceEndPoint);
+}
 
+void ASWeapon::SpawnMuzzleEffect()
+{
 	if (MuzzleEffect)
 	{
 		UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, MeshComponent, MuzzleSocketName);
+	}
+}
+
+void ASWeapon::SpawnTraceEffect(FVector TraceEndPoint)
+{
+	if (TracerEffect)
+	{
+		FVector MuzzleLocation = MeshComponent->GetSocketLocation(MuzzleSocketName);
+		UParticleSystemComponent* TracerComponent = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TracerEffect, MuzzleLocation);
+		if (TracerComponent)
+		{
+			/*
+			This VectorParameter and it's name are coming from the P_SmokeTrail particle asset's Target section
+			and it's respective Distribution.Parameter Name
+			*/
+			TracerComponent->SetVectorParameter("Target", TraceEndPoint);
+		}
 	}
 }
 
