@@ -42,7 +42,7 @@ protected:
 	UParticleSystem* ImpactEffect;
 	
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void Fire();	
+	virtual void Fire();	
 
 	virtual void BeginPlay() override;
 private:
