@@ -17,8 +17,9 @@ class COOPGAME_API ASWeapon : public AActor
 	
 public:	
 	ASWeapon();
-	virtual void Tick(float DeltaTime) override;
 
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	virtual void Fire();	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USkeletalMeshComponent* MeshComponent;
@@ -41,10 +42,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	UParticleSystem* ImpactEffect;
 	
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	virtual void Fire();	
-
-	virtual void BeginPlay() override;
 private:
 
 	FCollisionQueryParams GetLineTraceCollisionQueryParams(AActor* OwnerActor);

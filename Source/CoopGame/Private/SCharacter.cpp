@@ -4,17 +4,21 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "SWeapon.h"
 
 const float ZOOMED_FOV_DEFAULT = 65.0f;
 const float ZOOM_INTERP_SPEED_DEFAULT = 20.0f;
+const FName WEAPON_SOCKET_NAME = "WeaponSocket";
 
 ASCharacter::ASCharacter()
 {
 	EnableTicking();
 	SetupSpringArmComponent();
 	SetupCameraComponent();
+
 	ZoomedFOV = ZOOMED_FOV_DEFAULT;
-	ZoomInterpSpeed = ZOOM_INTERP_SPEED_DEFAULT; 
+	ZoomInterpSpeed = ZOOM_INTERP_SPEED_DEFAULT;
+	WeaponAttachSocketName = WEAPON_SOCKET_NAME;
 }
 
 void ASCharacter::EnableTicking()
@@ -40,7 +44,7 @@ void ASCharacter::EnableCrouching()
 	/*
 	Yes, this code is weird.
 	NavAgentProperties is usually used for AI, but since parts of Unreal are coded very uncleanly and
-	with weird dependencies, the engine code still gets around to checking this variable when we try 
+	with weird dependencies, the engine code still gets around to checking this variable when we try
 	to crouch.
 	*/
 	GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
@@ -52,6 +56,7 @@ void ASCharacter::BeginPlay()
 	EnableCrouching();
 
 	InitCurrentFOV();
+	SpawnDefaultWeapon();
 }
 
 void ASCharacter::Tick(float DeltaTime)
@@ -75,6 +80,14 @@ FVector ASCharacter::GetPawnViewLocation() const
 	return Super::GetPawnViewLocation();
 }
 
+void ASCharacter::Fire()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->Fire();
+	}
+}
+
 void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -91,6 +104,8 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	PlayerInputComponent->BindAction("Zoom", IE_Pressed, this, &ASCharacter::BeginZoom);
 	PlayerInputComponent->BindAction("Zoom", IE_Released, this, &ASCharacter::EndZoom);
+
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ASCharacter::Fire);
 }
 
 void ASCharacter::MoveForward(float MovementValue)
@@ -125,8 +140,8 @@ void ASCharacter::SetCurrentFOV(float DeltaTime)
 	float TargetFOV = bWantsToZoom ? ZoomedFOV : DefaultFOV;
 	float NewFOV = FMath::FInterpTo(
 		CameraComponent->FieldOfView,
-		TargetFOV, 
-		DeltaTime, 
+		TargetFOV,
+		DeltaTime,
 		ZoomInterpSpeed);
 
 	CameraComponent->SetFieldOfView(NewFOV);
@@ -140,4 +155,31 @@ void ASCharacter::BeginZoom()
 void ASCharacter::EndZoom()
 {
 	bWantsToZoom = false;
+}
+
+void ASCharacter::SpawnDefaultWeapon()
+{
+	/*
+	Following two lines are done in order to insure that the weapon always spawns
+	*/
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	CurrentWeapon = GetWorld()->SpawnActor<ASWeapon>(
+		StarterWeaponClass,
+		FVector::ZeroVector,
+		FRotator::ZeroRotator,
+		SpawnParams
+		);
+	
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->SetOwner(this);
+
+		CurrentWeapon->AttachToComponent(
+			GetMesh(),
+			FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+			WeaponAttachSocketName
+		);
+	}
 }

@@ -26,25 +26,11 @@ FAutoConsoleVariableRef CVARDebugWeaponDrawing(
 
 ASWeapon::ASWeapon()
 {
-	PrimaryActorTick.bCanEverTick = true;
-
 	MeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MeshComp"));
 	RootComponent = MeshComponent;
 
 	MuzzleSocketName = "MuzzleSocket";
 	TracerTargetName = "Target";
-}
-
-void ASWeapon::BeginPlay()
-{
-	Super::BeginPlay();
-
-}
-
-void ASWeapon::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 
 /*
