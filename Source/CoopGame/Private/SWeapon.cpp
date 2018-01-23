@@ -17,6 +17,13 @@ const float LINE_TRACE_THICKNESS = 1.0f;
 
 const float DAMAGE_AMOUNT = 20.0f;
 
+static int32 DebugWeaponDrawing = 0;
+FAutoConsoleVariableRef CVARDebugWeaponDrawing(
+	TEXT("COOP.DebugWeapons"),
+	DebugWeaponDrawing,
+	TEXT("Draw Debug Lines For Weapons"),
+	ECVF_Cheat);
+
 ASWeapon::ASWeapon()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -105,15 +112,18 @@ void ASWeapon::ProcessDamage(FHitResult HitResult, FVector ShotDirection, AContr
 
 void ASWeapon::SpawnShotEffects(FVector EyeLocation, FVector TraceEndPoint)
 {
-	DrawDebugLine(
-		GetWorld(),
-		EyeLocation,
-		TraceEndPoint,
-		LINE_TRACE_COLOR,
-		LINE_TRACE_PERSISTENT,
-		LINE_TRACE_LIFETIME_SEC,
-		LINE_TRACE_DEPTH_PRIORITY,
-		LINE_TRACE_THICKNESS);
+	if (DebugWeaponDrawing > 0)
+	{
+		DrawDebugLine(
+			GetWorld(),
+			EyeLocation,
+			TraceEndPoint,
+			LINE_TRACE_COLOR,
+			LINE_TRACE_PERSISTENT,
+			LINE_TRACE_LIFETIME_SEC,
+			LINE_TRACE_DEPTH_PRIORITY,
+			LINE_TRACE_THICKNESS);
+	}
 
 	SpawnMuzzleEffect();
 	SpawnTraceEffect(TraceEndPoint);
