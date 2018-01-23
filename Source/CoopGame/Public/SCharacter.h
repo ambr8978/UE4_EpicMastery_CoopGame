@@ -24,6 +24,15 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 protected:
+	bool bWantsToZoom;
+	float DefaultFOV;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Player ")
+	float ZoomedFOV;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Player", meta = (ClampMin = 0.1, ClampMax = 100))
+		float ZoomInterpSpeed;
+	 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USpringArmComponent* SpringArmComponent;
 
@@ -44,4 +53,10 @@ protected:
 	void SetupSpringArmComponent();
 	void EnableCrouching();
 	void SetupCameraComponent();
+
+	void InitCurrentFOV();
+	void SetCurrentFOV(float DeltaTime);
+
+	void BeginZoom();
+	void EndZoom();
 };

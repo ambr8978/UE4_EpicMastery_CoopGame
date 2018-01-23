@@ -5,11 +5,16 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
 
+const float ZOOMED_FOV_DEFAULT = 65.0f;
+const float ZOOM_INTERP_SPEED_DEFAULT = 20.0f;
+
 ASCharacter::ASCharacter()
 {
 	EnableTicking();
 	SetupSpringArmComponent();
 	SetupCameraComponent();
+	ZoomedFOV = ZOOMED_FOV_DEFAULT;
+	ZoomInterpSpeed = ZOOM_INTERP_SPEED_DEFAULT; 
 }
 
 void ASCharacter::EnableTicking()
@@ -45,11 +50,14 @@ void ASCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	EnableCrouching();
+
+	InitCurrentFOV();
 }
 
 void ASCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	SetCurrentFOV(DeltaTime);
 }
 
 FVector ASCharacter::GetPawnViewLocation() const
@@ -80,6 +88,9 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &ASCharacter::EndCrouch);
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASCharacter::Jump);
+
+	PlayerInputComponent->BindAction("Zoom", IE_Pressed, this, &ASCharacter::BeginZoom);
+	PlayerInputComponent->BindAction("Zoom", IE_Released, this, &ASCharacter::EndZoom);
 }
 
 void ASCharacter::MoveForward(float MovementValue)
@@ -102,3 +113,31 @@ void ASCharacter::EndCrouch()
 	UnCrouch();
 }
 
+void ASCharacter::InitCurrentFOV()
+{
+	bWantsToZoom = false;
+	DefaultFOV = CameraComponent->FieldOfView;
+	SetCurrentFOV(0);
+}
+
+void ASCharacter::SetCurrentFOV(float DeltaTime)
+{
+	float TargetFOV = bWantsToZoom ? ZoomedFOV : DefaultFOV;
+	float NewFOV = FMath::FInterpTo(
+		CameraComponent->FieldOfView,
+		TargetFOV, 
+		DeltaTime, 
+		ZoomInterpSpeed);
+
+	CameraComponent->SetFieldOfView(NewFOV);
+}
+
+void ASCharacter::BeginZoom()
+{
+	bWantsToZoom = true;
+}
+
+void ASCharacter::EndZoom()
+{
+	bWantsToZoom = false;
+}
