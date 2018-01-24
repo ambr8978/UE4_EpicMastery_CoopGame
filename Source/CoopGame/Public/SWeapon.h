@@ -9,6 +9,7 @@
 class USkeletalMeshComponent;
 class UDamageType;
 class UParticleSystem;
+class UCameraShake;
 
 UCLASS()
 class COOPGAME_API ASWeapon : public AActor
@@ -41,9 +42,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	UParticleSystem* ImpactEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	TSubclassOf<UCameraShake> FireCameraShake;
 	
 private:
-
 	FCollisionQueryParams GetLineTraceCollisionQueryParams(AActor* OwnerActor);
 	void ProcessLineTrace(AActor* OwnerActor);
 	void ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController);
@@ -52,4 +55,5 @@ private:
 	void SpawnHitEffects(FHitResult HitResult);
 	void SpawnMuzzleEffect();
 	void SpawnTraceEffect(FVector TraceEndPoint);
+	void PlayWeaponShakeAnimation();
 };

@@ -7,6 +7,7 @@
 #include "GameFramework/DamageType.h"
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Camera/CameraShake.h"
 
 const int LINE_TRACE_LENGTH = 10000;
 const FColor LINE_TRACE_COLOR = FColor::White;
@@ -44,7 +45,6 @@ void ASWeapon::Fire()
 	{
 		ProcessLineTrace(MyOwner);
 	}
-
 }
 
 FCollisionQueryParams ASWeapon::GetLineTraceCollisionQueryParams(AActor* OwnerActor)
@@ -81,6 +81,7 @@ void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
 	}
 
 	SpawnShotEffects(EyeLocation, TraceEndPoint);
+	PlayWeaponShakeAnimation();
 }
 
 void ASWeapon::ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController)
@@ -112,7 +113,8 @@ void ASWeapon::SpawnShotEffects(FVector EyeLocation, FVector TraceEndPoint)
 	}
 
 	SpawnMuzzleEffect();
-	SpawnTraceEffect(TraceEndPoint);
+	SpawnTraceEffect(TraceEndPoint);	
+	PlayWeaponShakeAnimation();
 }
 
 void ASWeapon::SpawnMuzzleEffect()
@@ -150,5 +152,18 @@ void ASWeapon::SpawnHitEffects(FHitResult HitResult)
 			HitResult.ImpactPoint,
 			HitResult.ImpactNormal.Rotation()
 		);
+	}
+}
+
+void ASWeapon::PlayWeaponShakeAnimation()
+{
+	APawn* OwnerActor = Cast<APawn>(GetOwner());
+	if (OwnerActor)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(OwnerActor->GetController());
+		if (PlayerController)
+		{
+			PlayerController->ClientPlayCameraShake(FireCameraShake);
+		}
 	}
 }
