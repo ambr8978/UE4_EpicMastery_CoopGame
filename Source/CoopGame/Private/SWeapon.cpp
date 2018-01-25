@@ -17,7 +17,7 @@ const bool LINE_TRACE_PERSISTENT = false;
 const int LINE_TRACE_DEPTH_PRIORITY = 0;
 const float LINE_TRACE_THICKNESS = 1.0f;
 
-const float DAMAGE_AMOUNT = 20.0f;
+const float DAMAGE_HEADSHOT_MULTIPLIER = 4;
 
 #define SURFACE_FLESHDEFAULT	SurfaceType1
 #define SURFACE_FLESHVULNERABLE	SurfaceType2
@@ -99,14 +99,27 @@ void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
 void ASWeapon::ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController)
 {
 	AActor* HitActor = HitResult.GetActor();
+	float DamageDealt = GetDamageBasedOffHitSurface(GetHitSurfaceType(HitResult));
+
 	UGameplayStatics::ApplyPointDamage(
 		HitActor,
-		DAMAGE_AMOUNT,
+		DamageDealt,
 		ShotDirection,
 		HitResult,
 		InstigatorController,
 		this,
 		DamageType);
+}
+
+float ASWeapon::GetDamageBasedOffHitSurface(EPhysicalSurface HitSurface)
+{
+	float DamageDealt = BaseDamage;
+	if (HitSurface == SURFACE_FLESHVULNERABLE)
+	{
+		DamageDealt *= DAMAGE_HEADSHOT_MULTIPLIER;
+	}
+
+	return DamageDealt;
 }
 
 void ASWeapon::SpawnShotEffects(FVector EyeLocation, FVector TraceEndPoint)
@@ -157,7 +170,7 @@ void ASWeapon::SpawnTraceEffect(FVector TraceEndPoint)
 void ASWeapon::SpawnHitEffects(FHitResult HitResult)
 {
 
-	UParticleSystem* HitSurfaceParticleEffect = GetHitSurfaceParticleEffect(HitResult);
+	UParticleSystem* HitSurfaceParticleEffect = GetHitSurfaceParticleEffect(GetHitSurfaceType(HitResult));
 	UGameplayStatics::SpawnEmitterAtLocation(
 		GetWorld(),
 		HitSurfaceParticleEffect,
@@ -166,9 +179,8 @@ void ASWeapon::SpawnHitEffects(FHitResult HitResult)
 	);
 }
 
-UParticleSystem* ASWeapon::GetHitSurfaceParticleEffect(FHitResult HitResult)
-{
-	EPhysicalSurface SurfaceType = UPhysicalMaterial::DetermineSurfaceType(HitResult.PhysMaterial.Get());
+UParticleSystem* ASWeapon::GetHitSurfaceParticleEffect(EPhysicalSurface SurfaceType)
+{	
 	UParticleSystem* SelectedEffect = nullptr;
 	switch (SurfaceType)
 	{
@@ -181,6 +193,11 @@ UParticleSystem* ASWeapon::GetHitSurfaceParticleEffect(FHitResult HitResult)
 	}
 
 	return SelectedEffect;
+}
+
+EPhysicalSurface ASWeapon::GetHitSurfaceType(FHitResult HitResult)
+{
+	return UPhysicalMaterial::DetermineSurfaceType(HitResult.PhysMaterial.Get());
 }
 
 void ASWeapon::PlayWeaponShakeAnimation()

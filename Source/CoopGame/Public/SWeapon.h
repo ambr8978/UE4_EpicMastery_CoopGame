@@ -49,14 +49,19 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	TSubclassOf<UCameraShake> FireCameraShake;
 	
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	float BaseDamage;
+
 private:
 	FCollisionQueryParams GetLineTraceCollisionQueryParams(AActor* OwnerActor);
 	void ProcessLineTrace(AActor* OwnerActor);
 	void ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController);
+	float GetDamageBasedOffHitSurface(EPhysicalSurface HitSurface);
 
 	void SpawnShotEffects(FVector EyeLocation, FVector TraceEnd);
 	void SpawnHitEffects(FHitResult HitResult);
-	UParticleSystem* GetHitSurfaceParticleEffect(FHitResult HitResult);
+	UParticleSystem* GetHitSurfaceParticleEffect(EPhysicalSurface SurfaceType);
+	EPhysicalSurface GetHitSurfaceType(FHitResult HitResult);
 	void SpawnMuzzleEffect();
 	void SpawnTraceEffect(FVector TraceEndPoint);
 	void PlayWeaponShakeAnimation();
