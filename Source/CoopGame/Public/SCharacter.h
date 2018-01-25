@@ -51,7 +51,8 @@ protected:
 
 	virtual FVector GetPawnViewLocation() const override;
 
-	void Fire();
+	void StartFire();
+	void StopFire();
 
 	void MoveForward(float MovementValue);
 	void MoveRight(float MovementValue);

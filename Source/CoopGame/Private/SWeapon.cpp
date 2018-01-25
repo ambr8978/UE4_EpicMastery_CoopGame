@@ -9,6 +9,9 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Camera/CameraShake.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
+#include "TimerManager.h"
+
+const bool TIMER_SHOULD_LOOP = true;
 
 const int LINE_TRACE_LENGTH = 10000;
 const FColor LINE_TRACE_COLOR = FColor::White;
@@ -37,6 +40,37 @@ ASWeapon::ASWeapon()
 
 	MuzzleSocketName = "MuzzleSocket";
 	TracerTargetName = "Target";
+
+	BaseDamage = 20.0f;
+	RateOfFire = 600.0f;
+}
+
+void ASWeapon::BeginPlay()
+{
+	Super::BeginPlay();
+	TimeBetweenShots = 60 / RateOfFire;
+	LastFireTime = -TimeBetweenShots;
+}
+
+void ASWeapon::StartFire()
+{
+	float FirstDelay = FMath::Max(LastFireTime + TimeBetweenShots - GetWorld()->TimeSeconds, 0.0f); 
+
+	/*
+	Call Fire() every TIMER_RATE sec
+	*/
+	GetWorldTimerManager().SetTimer(
+		TimerHandle_TimeBetweenShots, 
+		this, 
+		&ASWeapon::Fire, 
+		TimeBetweenShots, 
+		TIMER_SHOULD_LOOP,
+		FirstDelay);
+}
+
+void ASWeapon::StopFire()
+{
+	GetWorldTimerManager().ClearTimer(TimerHandle_TimeBetweenShots);
 }
 
 /*
@@ -94,6 +128,7 @@ void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
 
 	SpawnShotEffects(EyeLocation, TraceEndPoint);
 	PlayWeaponShakeAnimation();
+	LastFireTime = GetWorld()->TimeSeconds;
 }
 
 void ASWeapon::ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController)

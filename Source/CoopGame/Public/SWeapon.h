@@ -19,9 +19,11 @@ class COOPGAME_API ASWeapon : public AActor
 public:	
 	ASWeapon();
 
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	virtual void Fire();	
+	void StartFire();
+	void StopFire();
 protected:
+	virtual void BeginPlay() override;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USkeletalMeshComponent* MeshComponent;
 	
@@ -52,7 +54,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	float BaseDamage;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	float RateOfFire;
+
+	FTimerHandle TimerHandle_TimeBetweenShots;
+	virtual void Fire();	
+
 private:
+	//Derived from RateOfFire
+	float TimeBetweenShots;
+	float LastFireTime;
+
 	FCollisionQueryParams GetLineTraceCollisionQueryParams(AActor* OwnerActor);
 	void ProcessLineTrace(AActor* OwnerActor);
 	void ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController);
