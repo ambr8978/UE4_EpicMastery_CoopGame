@@ -8,6 +8,7 @@
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Camera/CameraShake.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 
 const int LINE_TRACE_LENGTH = 10000;
 const FColor LINE_TRACE_COLOR = FColor::White;
@@ -17,6 +18,9 @@ const int LINE_TRACE_DEPTH_PRIORITY = 0;
 const float LINE_TRACE_THICKNESS = 1.0f;
 
 const float DAMAGE_AMOUNT = 20.0f;
+
+#define SURFACE_FLESHDEFAULT SurfaceType1
+#define SURFACE_FLESHVULNERABLE SurfaceType2
 
 static int32 DebugWeaponDrawing = 0;
 FAutoConsoleVariableRef CVARDebugWeaponDrawing(
@@ -58,6 +62,7 @@ FCollisionQueryParams ASWeapon::GetLineTraceCollisionQueryParams(AActor* OwnerAc
 	I would imagine that this would be necessary if we wanted to differentiate between head/non-head hits.
 	*/
 	QueryParams.bTraceComplex = true;
+	QueryParams.bReturnPhysicalMaterial = true;
 
 	return QueryParams;
 }
@@ -144,15 +149,31 @@ void ASWeapon::SpawnTraceEffect(FVector TraceEndPoint)
 
 void ASWeapon::SpawnHitEffects(FHitResult HitResult)
 {
-	if (ImpactEffect)
+
+	UParticleSystem* HitSurfaceParticleEffect = GetHitSurfaceParticleEffect(HitResult);
+	UGameplayStatics::SpawnEmitterAtLocation(
+		GetWorld(),
+		HitSurfaceParticleEffect,
+		HitResult.ImpactPoint,
+		HitResult.ImpactNormal.Rotation()
+	);
+}
+
+UParticleSystem* ASWeapon::GetHitSurfaceParticleEffect(FHitResult HitResult)
+{
+	EPhysicalSurface SurfaceType = UPhysicalMaterial::DetermineSurfaceType(HitResult.PhysMaterial.Get());
+	UParticleSystem* SelectedEffect = nullptr;
+	switch (SurfaceType)
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(
-			GetWorld(),
-			ImpactEffect,
-			HitResult.ImpactPoint,
-			HitResult.ImpactNormal.Rotation()
-		);
+	case SURFACE_FLESHDEFAULT:
+	case SURFACE_FLESHVULNERABLE:
+		SelectedEffect = FleshImpactEffect;
+		break;
+	default:
+		SelectedEffect = DefaultImpactEffect;
 	}
+
+	return SelectedEffect;
 }
 
 void ASWeapon::PlayWeaponShakeAnimation()

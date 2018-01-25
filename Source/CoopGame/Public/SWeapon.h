@@ -41,7 +41,10 @@ protected:
 	UParticleSystem* TracerEffect;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	UParticleSystem* ImpactEffect;
+	UParticleSystem* DefaultImpactEffect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	UParticleSystem* FleshImpactEffect;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	TSubclassOf<UCameraShake> FireCameraShake;
@@ -53,6 +56,7 @@ private:
 
 	void SpawnShotEffects(FVector EyeLocation, FVector TraceEnd);
 	void SpawnHitEffects(FHitResult HitResult);
+	UParticleSystem* GetHitSurfaceParticleEffect(FHitResult HitResult);
 	void SpawnMuzzleEffect();
 	void SpawnTraceEffect(FVector TraceEndPoint);
 	void PlayWeaponShakeAnimation();
