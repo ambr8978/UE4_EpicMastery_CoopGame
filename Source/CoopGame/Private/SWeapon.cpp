@@ -19,8 +19,9 @@ const float LINE_TRACE_THICKNESS = 1.0f;
 
 const float DAMAGE_AMOUNT = 20.0f;
 
-#define SURFACE_FLESHDEFAULT SurfaceType1
-#define SURFACE_FLESHVULNERABLE SurfaceType2
+#define SURFACE_FLESHDEFAULT	SurfaceType1
+#define SURFACE_FLESHVULNERABLE	SurfaceType2
+#define COLLISION_WEAPON		ECC_GameTraceChannel1
 
 static int32 DebugWeaponDrawing = 0;
 FAutoConsoleVariableRef CVARDebugWeaponDrawing(
@@ -77,7 +78,13 @@ void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
 	FVector TraceEndPoint = TraceEnd;
 
 	FHitResult HitResult;
-	bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(HitResult, EyeLocation, TraceEnd, ECC_Visibility, GetLineTraceCollisionQueryParams(OwnerActor));
+	bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult, 
+		EyeLocation, 
+		TraceEnd, 
+		COLLISION_WEAPON, 
+		GetLineTraceCollisionQueryParams(OwnerActor));
+
 	if (bBlockingHit)
 	{
 		TraceEndPoint = HitResult.ImpactPoint;
