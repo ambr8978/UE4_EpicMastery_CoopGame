@@ -4,6 +4,8 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "CoopGame.h"
 #include "SWeapon.h"
 
 const float ZOOMED_FOV_DEFAULT = 65.0f;
@@ -15,6 +17,7 @@ ASCharacter::ASCharacter()
 	EnableTicking();
 	SetupSpringArmComponent();
 	SetupCameraComponent();
+	SetupCapsuleComponentCollision();
 
 	ZoomedFOV = ZOOMED_FOV_DEFAULT;
 	ZoomInterpSpeed = ZOOM_INTERP_SPEED_DEFAULT;
@@ -37,6 +40,11 @@ void ASCharacter::SetupCameraComponent()
 {
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	CameraComponent->SetupAttachment(SpringArmComponent);
+}
+
+void ASCharacter::SetupCapsuleComponentCollision()
+{
+	GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_WEAPON, ECR_Ignore);
 }
 
 void ASCharacter::EnableCrouching()

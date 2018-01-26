@@ -64,6 +64,7 @@ protected:
 	void SetupSpringArmComponent();
 	void EnableCrouching();
 	void SetupCameraComponent();
+	void SetupCapsuleComponentCollision();
 
 	void InitCurrentFOV();
 	void SetCurrentFOV(float DeltaTime);

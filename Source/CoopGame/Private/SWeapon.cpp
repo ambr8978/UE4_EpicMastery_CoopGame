@@ -10,6 +10,7 @@
 #include "Camera/CameraShake.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "TimerManager.h"
+#include "CoopGame.h"
 
 const bool TIMER_SHOULD_LOOP = true;
 
@@ -22,9 +23,6 @@ const float LINE_TRACE_THICKNESS = 1.0f;
 
 const float DAMAGE_HEADSHOT_MULTIPLIER = 4;
 
-#define SURFACE_FLESHDEFAULT	SurfaceType1
-#define SURFACE_FLESHVULNERABLE	SurfaceType2
-#define COLLISION_WEAPON		ECC_GameTraceChannel1
 
 static int32 DebugWeaponDrawing = 0;
 FAutoConsoleVariableRef CVARDebugWeaponDrawing(
