@@ -37,11 +37,16 @@ void USHealthComponent::TakeAnyDamage(
 		return;
 	}
 
-	ApplyDamage(Damage);
+	ApplyDamage(Damage, DamageType, DamageInstigator, DamageCauser);
 }
 
-void USHealthComponent::ApplyDamage(float Damage)
+void USHealthComponent::ApplyDamage(
+	float Damage, 
+	const UDamageType* DamageType, 
+	AController* DamageInstigator, 
+	AActor* DamageCauser)
 {
 	Health = FMath::Clamp(Health - Damage, 0.0f, DefaultHealth);
 	UE_LOG(LogTemp, Log, TEXT("Health Changed: %s"), *FString::SanitizeFloat(Health));
+	OnHealthChanged.Broadcast(this, Health, Damage, DamageType, DamageInstigator, DamageCauser);
 }
