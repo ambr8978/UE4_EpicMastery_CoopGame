@@ -51,6 +51,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	UCameraComponent* CameraComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USHealthComponent* HealthComponent;
 
 	virtual void BeginPlay() override;
@@ -83,7 +84,7 @@ protected:
 
 	UFUNCTION()
 	void OnHealthChanged(
-		USHealthComponent* HealthComponent,
+		USHealthComponent* HealthComp,
 		float Health,
 		float  HealthDelta,
 		const class UDamageType* DamageType,

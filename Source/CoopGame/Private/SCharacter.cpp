@@ -212,7 +212,7 @@ void ASCharacter::SpawnDefaultWeapon()
 }
 
 void ASCharacter::OnHealthChanged(
-	USHealthComponent* HealthComponent,
+	USHealthComponent* HealthComp,
 	float Health,
 	float  HealthDelta,
 	const class UDamageType* DamageType,
