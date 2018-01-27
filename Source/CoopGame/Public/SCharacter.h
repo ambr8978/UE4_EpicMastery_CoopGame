@@ -8,6 +8,7 @@
 
 class UCameraComponent;
 class USpringArmComponent;
+class USHealthComponent;
 class ASWeapon;
 
 UCLASS()
@@ -29,6 +30,9 @@ protected:
 	bool bWantsToZoom;
 	float DefaultFOV;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Player")
+	bool bDied;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Player")
 	TSubclassOf<ASWeapon> StarterWeaponClass;
 
@@ -47,6 +51,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	UCameraComponent* CameraComponent;
 
+	USHealthComponent* HealthComponent;
+
 	virtual void BeginPlay() override;
 
 	virtual FVector GetPawnViewLocation() const override;
@@ -64,6 +70,7 @@ protected:
 	void SetupSpringArmComponent();
 	void EnableCrouching();
 	void SetupCameraComponent();
+	void SetupHealthComponent();
 	void SetupCapsuleComponentCollision();
 
 	void InitCurrentFOV();
@@ -73,4 +80,15 @@ protected:
 	void EndZoom();
 
 	void SpawnDefaultWeapon();
+
+	UFUNCTION()
+	void OnHealthChanged(
+		USHealthComponent* HealthComponent,
+		float Health,
+		float  HealthDelta,
+		const class UDamageType* DamageType,
+		class AController* DamageInstigator,
+		AActor* DamageCauser);
+
+	void Die();
 };

@@ -5,20 +5,24 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "SHealthComponent.h"
 #include "CoopGame.h"
 #include "SWeapon.h"
 
 const float ZOOMED_FOV_DEFAULT = 65.0f;
 const float ZOOM_INTERP_SPEED_DEFAULT = 20.0f;
+const float TIME_UNTIL_PAWN_DESTROY_AFTER_DEATH_SEC = 10.0f;
 const FName WEAPON_SOCKET_NAME = "WeaponSocket";
 
 ASCharacter::ASCharacter()
 {
 	EnableTicking();
 	SetupSpringArmComponent();
+	SetupHealthComponent();
 	SetupCameraComponent();
 	SetupCapsuleComponentCollision();
 
+	bDied = false;
 	ZoomedFOV = ZOOMED_FOV_DEFAULT;
 	ZoomInterpSpeed = ZOOM_INTERP_SPEED_DEFAULT;
 	WeaponAttachSocketName = WEAPON_SOCKET_NAME;
@@ -40,6 +44,11 @@ void ASCharacter::SetupCameraComponent()
 {
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	CameraComponent->SetupAttachment(SpringArmComponent);
+}
+
+void ASCharacter::SetupHealthComponent()
+{
+	HealthComponent = CreateDefaultSubobject<USHealthComponent>(TEXT("HealthComponent"));
 }
 
 void ASCharacter::SetupCapsuleComponentCollision()
@@ -65,6 +74,7 @@ void ASCharacter::BeginPlay()
 
 	InitCurrentFOV();
 	SpawnDefaultWeapon();
+	HealthComponent->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
 }
 
 void ASCharacter::Tick(float DeltaTime)
@@ -188,7 +198,7 @@ void ASCharacter::SpawnDefaultWeapon()
 		FRotator::ZeroRotator,
 		SpawnParams
 		);
-	
+
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->SetOwner(this);
@@ -199,4 +209,28 @@ void ASCharacter::SpawnDefaultWeapon()
 			WeaponAttachSocketName
 		);
 	}
+}
+
+void ASCharacter::OnHealthChanged(
+	USHealthComponent* HealthComponent,
+	float Health,
+	float  HealthDelta,
+	const class UDamageType* DamageType,
+	class AController* DamageInstigator,
+	AActor* DamageCauser)
+{
+	if ((Health <= 0.0f) && 
+		(!bDied))
+	{
+		Die();
+	}
+}
+
+void ASCharacter::Die()
+{
+	bDied = true;
+	GetMovementComponent()->StopMovementImmediately();
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	DetachFromControllerPendingDestroy();
+	SetLifeSpan(TIME_UNTIL_PAWN_DESTROY_AFTER_DEATH_SEC);
 }
