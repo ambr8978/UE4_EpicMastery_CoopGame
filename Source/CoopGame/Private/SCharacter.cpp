@@ -8,6 +8,7 @@
 #include "SHealthComponent.h"
 #include "CoopGame.h"
 #include "SWeapon.h"
+#include "Net/UnrealNetwork.h"
 
 const float ZOOMED_FOV_DEFAULT = 65.0f;
 const float ZOOM_INTERP_SPEED_DEFAULT = 20.0f;
@@ -71,10 +72,13 @@ void ASCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	EnableCrouching();
-
-	InitCurrentFOV();
-	SpawnDefaultWeapon();
 	HealthComponent->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
+
+	if (Role == ROLE_Authority)
+	{
+		InitCurrentFOV();
+		SpawnDefaultWeapon();
+	}
 }
 
 void ASCharacter::Tick(float DeltaTime)
@@ -96,6 +100,13 @@ FVector ASCharacter::GetPawnViewLocation() const
 	}
 
 	return Super::GetPawnViewLocation();
+}
+
+void ASCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASCharacter, CurrentWeapon);
 }
 
 void ASCharacter::StartFire()
@@ -219,7 +230,7 @@ void ASCharacter::OnHealthChanged(
 	class AController* DamageInstigator,
 	AActor* DamageCauser)
 {
-	if ((Health <= 0.0f) && 
+	if ((Health <= 0.0f) &&
 		(!bDied))
 	{
 		Die();

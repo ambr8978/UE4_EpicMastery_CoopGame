@@ -33,6 +33,7 @@ FAutoConsoleVariableRef CVARDebugWeaponDrawing(
 
 ASWeapon::ASWeapon()
 {
+	SetReplicates(true);
 	MeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MeshComp"));
 	RootComponent = MeshComponent;
 

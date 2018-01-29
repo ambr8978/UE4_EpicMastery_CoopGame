@@ -26,9 +26,11 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 protected:
-	ASWeapon* CurrentWeapon;
 	bool bWantsToZoom;
 	float DefaultFOV;
+
+	UPROPERTY(Replicated)
+	ASWeapon* CurrentWeapon;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Player")
 	bool bDied;
@@ -57,6 +59,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual FVector GetPawnViewLocation() const override;
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
 	void StartFire();
 	void StopFire();
