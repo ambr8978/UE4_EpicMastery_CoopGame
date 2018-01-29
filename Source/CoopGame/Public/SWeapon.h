@@ -11,6 +11,21 @@ class UDamageType;
 class UParticleSystem;
 class UCameraShake;
 
+/*
+Contains information of a single hitscan weapon linetrace
+*/
+USTRUCT()
+struct FHitScanTrace
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	FVector_NetQuantize TraceFrom;
+
+	UPROPERTY()
+	FVector_NetQuantize TraceTo;
+};
+
 UCLASS()
 class COOPGAME_API ASWeapon : public AActor
 {
@@ -58,7 +73,13 @@ protected:
 	float RateOfFire;
 
 	FTimerHandle TimerHandle_TimeBetweenShots;
-	
+
+	UPROPERTY(ReplicatedUsing=OnRep_HitScanTrace)
+	FHitScanTrace HitScanTrace;
+
+	UFUNCTION()
+	void OnRep_HitScanTrace();
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerFire();
 
@@ -73,8 +94,9 @@ private:
 	void ProcessLineTrace(AActor* OwnerActor);
 	void ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController);
 	float GetDamageBasedOffHitSurface(EPhysicalSurface HitSurface);
+	void UpdateHitScanTrace(FVector TraceEndPoint);
 
-	void SpawnShotEffects(FVector EyeLocation, FVector TraceEnd);
+	void SpawnShotEffects(FVector TraceEnd);
 	void SpawnHitEffects(FHitResult HitResult);
 	UParticleSystem* GetHitSurfaceParticleEffect(EPhysicalSurface SurfaceType);
 	EPhysicalSurface GetHitSurfaceType(FHitResult HitResult);

@@ -11,6 +11,7 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "TimerManager.h"
 #include "CoopGame.h"
+#include "Net/UnrealNetwork.h"
 
 const bool TIMER_SHOULD_LOOP = true;
 
@@ -53,16 +54,16 @@ void ASWeapon::BeginPlay()
 
 void ASWeapon::StartFire()
 {
-	float FirstDelay = FMath::Max(LastFireTime + TimeBetweenShots - GetWorld()->TimeSeconds, 0.0f); 
+	float FirstDelay = FMath::Max(LastFireTime + TimeBetweenShots - GetWorld()->TimeSeconds, 0.0f);
 
 	/*
 	Call Fire() every TIMER_RATE sec
 	*/
 	GetWorldTimerManager().SetTimer(
-		TimerHandle_TimeBetweenShots, 
-		this, 
-		&ASWeapon::Fire, 
-		TimeBetweenShots, 
+		TimerHandle_TimeBetweenShots,
+		this,
+		&ASWeapon::Fire,
+		TimeBetweenShots,
 		TIMER_SHOULD_LOOP,
 		FirstDelay);
 }
@@ -70,6 +71,11 @@ void ASWeapon::StartFire()
 void ASWeapon::StopFire()
 {
 	GetWorldTimerManager().ClearTimer(TimerHandle_TimeBetweenShots);
+}
+
+void ASWeapon::OnRep_HitScanTrace()
+{
+	SpawnShotEffects(HitScanTrace.TraceTo);
 }
 
 void ASWeapon::ServerFire_Implementation()
@@ -111,10 +117,10 @@ void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
 
 	FHitResult HitResult;
 	bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(
-		HitResult, 
-		EyeLocation, 
-		TraceEnd, 
-		COLLISION_WEAPON, 
+		HitResult,
+		EyeLocation,
+		TraceEnd,
+		COLLISION_WEAPON,
 		GetLineTraceCollisionQueryParams(OwnerActor));
 
 	if (bBlockingHit)
@@ -124,8 +130,9 @@ void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
 		SpawnHitEffects(HitResult);
 	}
 
-	SpawnShotEffects(EyeLocation, TraceEndPoint);
+	SpawnShotEffects(TraceEndPoint);
 	PlayWeaponShakeAnimation();
+	UpdateHitScanTrace(TraceEndPoint);
 	LastFireTime = GetWorld()->TimeSeconds;
 }
 
@@ -171,23 +178,10 @@ float ASWeapon::GetDamageBasedOffHitSurface(EPhysicalSurface HitSurface)
 	return DamageDealt;
 }
 
-void ASWeapon::SpawnShotEffects(FVector EyeLocation, FVector TraceEndPoint)
+void ASWeapon::SpawnShotEffects(FVector TraceEndPoint)
 {
-	if (DebugWeaponDrawing > 0)
-	{
-		DrawDebugLine(
-			GetWorld(),
-			EyeLocation,
-			TraceEndPoint,
-			LINE_TRACE_COLOR,
-			LINE_TRACE_PERSISTENT,
-			LINE_TRACE_LIFETIME_SEC,
-			LINE_TRACE_DEPTH_PRIORITY,
-			LINE_TRACE_THICKNESS);
-	}
-
 	SpawnMuzzleEffect();
-	SpawnTraceEffect(TraceEndPoint);	
+	SpawnTraceEffect(TraceEndPoint);
 	PlayWeaponShakeAnimation();
 }
 
@@ -229,7 +223,7 @@ void ASWeapon::SpawnHitEffects(FHitResult HitResult)
 }
 
 UParticleSystem* ASWeapon::GetHitSurfaceParticleEffect(EPhysicalSurface SurfaceType)
-{	
+{
 	UParticleSystem* SelectedEffect = nullptr;
 	switch (SurfaceType)
 	{
@@ -260,4 +254,19 @@ void ASWeapon::PlayWeaponShakeAnimation()
 			PlayerController->ClientPlayCameraShake(FireCameraShake);
 		}
 	}
+}
+
+void ASWeapon::UpdateHitScanTrace(FVector TraceEndPoint)
+{
+	if (Role == ROLE_Authority)
+	{
+		HitScanTrace.TraceTo = TraceEndPoint;
+	}
+}
+
+void ASWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(ASWeapon, HitScanTrace, COND_SkipOwner);
 }

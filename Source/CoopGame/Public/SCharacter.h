@@ -59,7 +59,6 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual FVector GetPawnViewLocation() const override;
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
 	void StartFire();
 	void StopFire();

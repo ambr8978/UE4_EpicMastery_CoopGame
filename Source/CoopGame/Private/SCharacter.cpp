@@ -73,10 +73,10 @@ void ASCharacter::BeginPlay()
 	Super::BeginPlay();
 	EnableCrouching();
 	HealthComponent->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
+	InitCurrentFOV();
 
 	if (Role == ROLE_Authority)
 	{
-		InitCurrentFOV();
 		SpawnDefaultWeapon();
 	}
 }
