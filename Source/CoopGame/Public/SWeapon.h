@@ -58,6 +58,10 @@ protected:
 	float RateOfFire;
 
 	FTimerHandle TimerHandle_TimeBetweenShots;
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerFire();
+
 	virtual void Fire();	
 
 private:

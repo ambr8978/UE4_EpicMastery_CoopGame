@@ -72,33 +72,32 @@ void ASWeapon::StopFire()
 	GetWorldTimerManager().ClearTimer(TimerHandle_TimeBetweenShots);
 }
 
+void ASWeapon::ServerFire_Implementation()
+{
+	Fire();
+}
+
+bool ASWeapon::ServerFire_Validate()
+{
+	return true;
+}
+
 /*
 There is a lot of object creation and calculation that takes place in this function.
 Seems like this function is an obvious candidate for optimization.
 */
 void ASWeapon::Fire()
 {
+	if (Role < ROLE_Authority)
+	{
+		ServerFire();
+	}
+
 	AActor* MyOwner = GetOwner();
 	if (MyOwner)
 	{
 		ProcessLineTrace(MyOwner);
 	}
-}
-
-FCollisionQueryParams ASWeapon::GetLineTraceCollisionQueryParams(AActor* OwnerActor)
-{
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(OwnerActor);
-	QueryParams.AddIgnoredActor(this);
-	/*
-	Setting this to true gives us the exact location the line trace hit.
-	If this were set to false, this might give us a more simple collision, like whether it hit the collision box, etc.
-	I would imagine that this would be necessary if we wanted to differentiate between head/non-head hits.
-	*/
-	QueryParams.bTraceComplex = true;
-	QueryParams.bReturnPhysicalMaterial = true;
-
-	return QueryParams;
 }
 
 void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
@@ -128,6 +127,22 @@ void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
 	SpawnShotEffects(EyeLocation, TraceEndPoint);
 	PlayWeaponShakeAnimation();
 	LastFireTime = GetWorld()->TimeSeconds;
+}
+
+FCollisionQueryParams ASWeapon::GetLineTraceCollisionQueryParams(AActor* OwnerActor)
+{
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(OwnerActor);
+	QueryParams.AddIgnoredActor(this);
+	/*
+	Setting this to true gives us the exact location the line trace hit.
+	If this were set to false, this might give us a more simple collision, like whether it hit the collision box, etc.
+	I would imagine that this would be necessary if we wanted to differentiate between head/non-head hits.
+	*/
+	QueryParams.bTraceComplex = true;
+	QueryParams.bReturnPhysicalMaterial = true;
+
+	return QueryParams;
 }
 
 void ASWeapon::ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController)
