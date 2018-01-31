@@ -24,6 +24,11 @@ const float LINE_TRACE_THICKNESS = 1.0f;
 
 const float DAMAGE_HEADSHOT_MULTIPLIER = 4;
 
+/*
+Check out Lecture 88, around the 8:30 mark for more of a breakdown
+*/
+const float NET_UPDATE_FREQ_DEFAULT_TICS_PER_SEC = 66.0f;
+const float MIN_NET_UPDATE_FREQ_TICS_PER_SEC = 33.0f;
 
 static int32 DebugWeaponDrawing = 0;
 FAutoConsoleVariableRef CVARDebugWeaponDrawing(
@@ -43,6 +48,9 @@ ASWeapon::ASWeapon()
 
 	BaseDamage = 20.0f;
 	RateOfFire = 600.0f;
+
+	NetUpdateFrequency = NET_UPDATE_FREQ_DEFAULT_TICS_PER_SEC;
+	MinNetUpdateFrequency = MIN_NET_UPDATE_FREQ_TICS_PER_SEC;
 }
 
 void ASWeapon::BeginPlay()
@@ -76,6 +84,7 @@ void ASWeapon::StopFire()
 void ASWeapon::OnRep_HitScanTrace()
 {
 	SpawnShotEffects(HitScanTrace.TraceTo);
+	SpawnHitEffects(HitScanTrace.SurfaceType, HitScanTrace.TraceTo);
 }
 
 void ASWeapon::ServerFire_Implementation()
@@ -114,6 +123,7 @@ void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
 	FVector ShotDirection = EyeRotation.Vector();
 	FVector TraceEnd = EyeLocation + (ShotDirection * LINE_TRACE_LENGTH);
 	FVector TraceEndPoint = TraceEnd;
+	EPhysicalSurface SurfaceHit = SurfaceType_Default;
 
 	FHitResult HitResult;
 	bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(
@@ -126,13 +136,14 @@ void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
 	if (bBlockingHit)
 	{
 		TraceEndPoint = HitResult.ImpactPoint;
-		ProcessDamage(HitResult, ShotDirection, OwnerActor->GetInstigatorController());
-		SpawnHitEffects(HitResult);
+		ProcessDamage(HitResult, ShotDirection, OwnerActor->GetInstigatorController());	
+		SurfaceHit = GetHitSurfaceType(HitResult);
+		SpawnHitEffects(SurfaceHit, HitResult.ImpactPoint);
 	}
 
 	SpawnShotEffects(TraceEndPoint);
 	PlayWeaponShakeAnimation();
-	UpdateHitScanTrace(TraceEndPoint);
+	UpdateHitScanTrace(TraceEndPoint, SurfaceHit);
 	LastFireTime = GetWorld()->TimeSeconds;
 }
 
@@ -210,16 +221,18 @@ void ASWeapon::SpawnTraceEffect(FVector TraceEndPoint)
 	}
 }
 
-void ASWeapon::SpawnHitEffects(FHitResult HitResult)
+void ASWeapon::SpawnHitEffects(EPhysicalSurface SurfaceHit, FVector ImpactPoint)
 {
+	UParticleSystem* HitSurfaceParticleEffect = GetHitSurfaceParticleEffect(SurfaceHit);
+	FVector MuzzleLocation = MeshComponent->GetSocketLocation(MuzzleSocketName);
+	FVector ShotDirection = ImpactPoint - MuzzleLocation;
+	ShotDirection.Normalize();
 
-	UParticleSystem* HitSurfaceParticleEffect = GetHitSurfaceParticleEffect(GetHitSurfaceType(HitResult));
 	UGameplayStatics::SpawnEmitterAtLocation(
 		GetWorld(),
 		HitSurfaceParticleEffect,
-		HitResult.ImpactPoint,
-		HitResult.ImpactNormal.Rotation()
-	);
+		ImpactPoint,
+		ShotDirection.Rotation());
 }
 
 UParticleSystem* ASWeapon::GetHitSurfaceParticleEffect(EPhysicalSurface SurfaceType)
@@ -256,11 +269,12 @@ void ASWeapon::PlayWeaponShakeAnimation()
 	}
 }
 
-void ASWeapon::UpdateHitScanTrace(FVector TraceEndPoint)
+void ASWeapon::UpdateHitScanTrace(FVector TraceEndPoint, EPhysicalSurface SurfaceHit)
 {
 	if (Role == ROLE_Authority)
 	{
 		HitScanTrace.TraceTo = TraceEndPoint;
+		HitScanTrace.SurfaceType = SurfaceHit;
 	}
 }
 

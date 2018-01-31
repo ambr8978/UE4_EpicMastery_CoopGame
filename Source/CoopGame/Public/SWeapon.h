@@ -20,7 +20,7 @@ struct FHitScanTrace
 	GENERATED_BODY()
 public:
 	UPROPERTY()
-	FVector_NetQuantize TraceFrom;
+	TEnumAsByte<EPhysicalSurface> SurfaceType;
 
 	UPROPERTY()
 	FVector_NetQuantize TraceTo;
@@ -86,7 +86,6 @@ protected:
 	virtual void Fire();	
 
 private:
-	//Derived from RateOfFire
 	float TimeBetweenShots;
 	float LastFireTime;
 
@@ -94,10 +93,10 @@ private:
 	void ProcessLineTrace(AActor* OwnerActor);
 	void ProcessDamage(FHitResult HitResult, FVector ShotDirection, AController* InstigatorController);
 	float GetDamageBasedOffHitSurface(EPhysicalSurface HitSurface);
-	void UpdateHitScanTrace(FVector TraceEndPoint);
+	void UpdateHitScanTrace(FVector TraceEndPoint, EPhysicalSurface SurfaceHit);
 
 	void SpawnShotEffects(FVector TraceEnd);
-	void SpawnHitEffects(FHitResult HitResult);
+	void SpawnHitEffects(EPhysicalSurface SurfaceHit, FVector ImpactPoint);
 	UParticleSystem* GetHitSurfaceParticleEffect(EPhysicalSurface SurfaceType);
 	EPhysicalSurface GetHitSurfaceType(FHitResult HitResult);
 	void SpawnMuzzleEffect();
