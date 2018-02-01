@@ -40,10 +40,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HealthComponent")
 	float DefaultHealth;
 
-	UPROPERTY(BlueprintReadOnly, Category = "HealthComponent")
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "HealthComponent")
 	float Health;
 		
 	virtual void BeginPlay() override;
+	void CreateTakeDamageHook();
 
 	UFUNCTION()
 	virtual void TakeAnyDamage(
