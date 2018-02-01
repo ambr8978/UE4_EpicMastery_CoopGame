@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "PhysicsEngine/RadialForceComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Net/UnrealNetwork.h"
 
 const int RADIAL_FORCE_COMPONENT_RADIUS = 250;
 const int EXPLOSION_IMPULSE_DEFAULT = 400;
@@ -12,9 +13,10 @@ const int EXPLOSION_IMPULSE_DEFAULT = 400;
 ASExplosiveBarrel::ASExplosiveBarrel()
 {
 	SetupHealthComponent();
-	SetUpStaticMeshComponent();
+	SetupStaticMeshComponent();
 	RootComponent = MeshComponent;
-	SetUpRadialForceComponent();
+	SetupRadialForceComponent();
+	SetupReplication();
 }
 
 void ASExplosiveBarrel::SetupHealthComponent()
@@ -23,7 +25,7 @@ void ASExplosiveBarrel::SetupHealthComponent()
 	HealthComponent->OnHealthChanged.AddDynamic(this, &ASExplosiveBarrel::OnHealthChanged);
 }
 
-void ASExplosiveBarrel::SetUpStaticMeshComponent()
+void ASExplosiveBarrel::SetupStaticMeshComponent()
 {
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetSimulatePhysics(true);
@@ -33,7 +35,7 @@ void ASExplosiveBarrel::SetUpStaticMeshComponent()
 	MeshComponent->SetCollisionObjectType(ECC_PhysicsBody);
 }
 
-void ASExplosiveBarrel::SetUpRadialForceComponent()
+void ASExplosiveBarrel::SetupRadialForceComponent()
 {
 	RadialForceComponent = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadialForceComponent"));
 	RadialForceComponent->SetupAttachment(MeshComponent);
@@ -46,6 +48,18 @@ void ASExplosiveBarrel::SetUpRadialForceComponent()
 	RadialForceComponent->bIgnoreOwningActor = true;
 
 	ExplosionImpulse = EXPLOSION_IMPULSE_DEFAULT;
+}
+
+void ASExplosiveBarrel::SetupReplication()
+{
+	SetReplicates(true);
+	SetReplicateMovement(true);
+}
+
+void ASExplosiveBarrel::OnRep_Exploded()
+{
+	PlayFX();
+	SetMaterialToExplodedMaterial();
 }
 
 void ASExplosiveBarrel::OnHealthChanged(
@@ -64,10 +78,9 @@ void ASExplosiveBarrel::OnHealthChanged(
 	if (Health <= 0.0f)
 	{
 		bExploded = true;
+		OnRep_Exploded();
 
 		BoostBarrelUpwards();
-		PlayFX();
-		SetMaterialToExplodedMaterial();
 		ApplyRadialForce();
 	}
 }
@@ -91,4 +104,11 @@ void ASExplosiveBarrel::SetMaterialToExplodedMaterial()
 void ASExplosiveBarrel::ApplyRadialForce()
 {
 	RadialForceComponent->FireImpulse();
+}
+
+void ASExplosiveBarrel::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASExplosiveBarrel, bExploded);
 }

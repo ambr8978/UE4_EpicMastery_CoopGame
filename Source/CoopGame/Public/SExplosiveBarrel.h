@@ -20,7 +20,11 @@ public:
 	ASExplosiveBarrel();
 
 protected:
+	UPROPERTY(ReplicatedUsing=OnRep_Exploded)
 	bool bExploded;
+
+	UFUNCTION()
+	void OnRep_Exploded();
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 		USHealthComponent* HealthComponent;
@@ -60,8 +64,9 @@ protected:
 
 private:
 	void SetupHealthComponent();
-	void SetUpStaticMeshComponent();
-	void SetUpRadialForceComponent();
+	void SetupStaticMeshComponent();
+	void SetupRadialForceComponent();
+	void SetupReplication();
 
 	void BoostBarrelUpwards();
 	void PlayFX();
