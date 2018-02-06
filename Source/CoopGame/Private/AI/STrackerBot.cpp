@@ -6,29 +6,58 @@
 #include "Kismet/GameplayStatics.h"
 #include "AI/Navigation/NavigationPath.h"
 
+const float MOVEMENT_FORCE_DEFAULT = 1000;
+const float REQUIRED_DISTANCE_DEFAULT = 100;
+
 ASTrackerBot::ASTrackerBot()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	SetupMeshComponent();
 	SetRootComponent();
+
+	bUseVelocityChange = false;
+	MovementForce = MOVEMENT_FORCE_DEFAULT;
+	RequiredDistanceToTarget = REQUIRED_DISTANCE_DEFAULT;
 }
 
 void ASTrackerBot::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	NextPathPoint = GetNextPathPoint();
 }
 
 void ASTrackerBot::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	MoveTowardsTarget();
+}
 
+void ASTrackerBot::MoveTowardsTarget()
+{
+	float DistanceToTarget = (GetActorLocation() - NextPathPoint).Size();
+	if (DistanceToTarget <= RequiredDistanceToTarget)
+	{
+		NextPathPoint = GetNextPathPoint();
+	}
+	else
+	{
+		KeepMovingTowardsTarget();
+	}
+}
+
+void ASTrackerBot::KeepMovingTowardsTarget()
+{
+	FVector ForceDirection = NextPathPoint - GetActorLocation();
+	ForceDirection.Normalize();
+	ForceDirection *= MovementForce;
+	MeshComponent->AddForce(ForceDirection, NAME_None, bUseVelocityChange);
 }
 
 void ASTrackerBot::SetupMeshComponent()
 {
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetCanEverAffectNavigation(false);
+	MeshComponent->SetSimulatePhysics(true);
 }
 
 void ASTrackerBot::SetRootComponent()
@@ -41,8 +70,8 @@ FVector ASTrackerBot::GetNextPathPoint()
 	//Hack to get player location
 	ACharacter* PlayerPawn = UGameplayStatics::GetPlayerCharacter(this, 0);
 
-	UNavigationPath* NavPath = UNavigationSystem::FindPathToActorSynchronously(this, GetActorLocation(), (AActor*) PlayerPawn);
-	
+	UNavigationPath* NavPath = UNavigationSystem::FindPathToActorSynchronously(this, GetActorLocation(), (AActor*)PlayerPawn);
+
 	if (NavPath->PathPoints.Num() > 1)
 	{
 		//Return next point in path
