@@ -26,6 +26,7 @@ protected:
 
 	void SetupMeshComponent();
 
+	FVector GetNextPathPoint();
 private:
 	void SetRootComponent();
 };
