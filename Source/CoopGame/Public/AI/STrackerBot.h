@@ -8,6 +8,7 @@
 
 class UStaticMeshComponent;
 class USHealthComponent;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class COOPGAME_API ASTrackerBot : public APawn
@@ -34,6 +35,8 @@ protected:
 	 
 	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
 	float RequiredDistanceToTarget;
+
+	UMaterialInstanceDynamic* DynamicMaterialToPulseOnDamage;
 	
 	FVector NextPathPoint;
 	FVector GetNextPathPoint();
@@ -54,4 +57,5 @@ private:
 
 	void MoveTowardsTarget();
 	void KeepMovingTowardsTarget();
+	void UpdateDynamicMaterial();
 };

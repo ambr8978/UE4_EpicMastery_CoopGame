@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "AI/Navigation/NavigationPath.h"
 #include "SHealthComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 const float MOVEMENT_FORCE_DEFAULT = 1000;
 const float REQUIRED_DISTANCE_DEFAULT = 100;
@@ -17,6 +18,7 @@ ASTrackerBot::ASTrackerBot()
 	SetRootComponent();
 	SetupHealthComponent();
 
+	DynamicMaterialToPulseOnDamage = nullptr;
 	bUseVelocityChange = false;
 	MovementForce = MOVEMENT_FORCE_DEFAULT;
 	RequiredDistanceToTarget = REQUIRED_DISTANCE_DEFAULT;
@@ -35,13 +37,27 @@ void ASTrackerBot::Tick(float DeltaTime)
 }
 
 void ASTrackerBot::HandleTakeDamage(
-	USHealthComponent* HealthComp, 
-	float Health, float HealthDelta, 
-	const class UDamageType* DamageType, 
-	class AController* InstigatedBy, 
+	USHealthComponent* HealthComp,
+	float Health, float HealthDelta,
+	const class UDamageType* DamageType,
+	class AController* InstigatedBy,
 	AActor* DamageCauser)
 {
+	UpdateDynamicMaterial();
 	UE_LOG(LogTemp, Log, TEXT("Health %s of %s"), *FString::SanitizeFloat(Health), *GetName());
+}
+
+void ASTrackerBot::UpdateDynamicMaterial()
+{
+	if (DynamicMaterialToPulseOnDamage == nullptr)
+	{
+		DynamicMaterialToPulseOnDamage = MeshComponent->CreateAndSetMaterialInstanceDynamicFromMaterial(0, MeshComponent->GetMaterial(0));
+	}
+
+	if (DynamicMaterialToPulseOnDamage)
+	{
+		DynamicMaterialToPulseOnDamage->SetScalarParameterValue("LastTimeDamageTaken", GetWorld()->TimeSeconds);
+	}
 }
 
 void ASTrackerBot::MoveTowardsTarget()
