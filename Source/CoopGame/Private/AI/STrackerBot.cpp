@@ -5,6 +5,7 @@
 #include "AI/Navigation/NavigationSystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "AI/Navigation/NavigationPath.h"
+#include "SHealthComponent.h"
 
 const float MOVEMENT_FORCE_DEFAULT = 1000;
 const float REQUIRED_DISTANCE_DEFAULT = 100;
@@ -14,6 +15,7 @@ ASTrackerBot::ASTrackerBot()
 	PrimaryActorTick.bCanEverTick = true;
 	SetupMeshComponent();
 	SetRootComponent();
+	SetupHealthComponent();
 
 	bUseVelocityChange = false;
 	MovementForce = MOVEMENT_FORCE_DEFAULT;
@@ -30,6 +32,16 @@ void ASTrackerBot::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	MoveTowardsTarget();
+}
+
+void ASTrackerBot::HandleTakeDamage(
+	USHealthComponent* HealthComp, 
+	float Health, float HealthDelta, 
+	const class UDamageType* DamageType, 
+	class AController* InstigatedBy, 
+	AActor* DamageCauser)
+{
+	UE_LOG(LogTemp, Log, TEXT("Health %s of %s"), *FString::SanitizeFloat(Health), *GetName());
 }
 
 void ASTrackerBot::MoveTowardsTarget()
@@ -63,6 +75,12 @@ void ASTrackerBot::SetupMeshComponent()
 void ASTrackerBot::SetRootComponent()
 {
 	RootComponent = MeshComponent;
+}
+
+void ASTrackerBot::SetupHealthComponent()
+{
+	HealthComponent = CreateDefaultSubobject<USHealthComponent>(TEXT("HealthComponent"));
+	HealthComponent->OnHealthChanged.AddDynamic(this, &ASTrackerBot::HandleTakeDamage);
 }
 
 FVector ASTrackerBot::GetNextPathPoint()
