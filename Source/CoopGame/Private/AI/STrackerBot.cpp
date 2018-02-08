@@ -7,9 +7,13 @@
 #include "AI/Navigation/NavigationPath.h"
 #include "SHealthComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "DrawDebugHelpers.h"
+#include "Particles/ParticleSystem.h"
 
 const float MOVEMENT_FORCE_DEFAULT = 1000;
 const float REQUIRED_DISTANCE_DEFAULT = 100;
+const float SELF_DESTRUCT_RADIAL_DAMAGE = 100;
+const float SELF_DESTRUCT_RADIUS = 200;
 
 ASTrackerBot::ASTrackerBot()
 {
@@ -22,6 +26,9 @@ ASTrackerBot::ASTrackerBot()
 	bUseVelocityChange = false;
 	MovementForce = MOVEMENT_FORCE_DEFAULT;
 	RequiredDistanceToTarget = REQUIRED_DISTANCE_DEFAULT;
+	bExploded = false;
+	ExplosionDamage = SELF_DESTRUCT_RADIAL_DAMAGE;
+	ExplosionRadius = SELF_DESTRUCT_RADIUS;
 }
 
 void ASTrackerBot::BeginPlay()
@@ -45,6 +52,11 @@ void ASTrackerBot::HandleTakeDamage(
 {
 	UpdateDynamicMaterial();
 	UE_LOG(LogTemp, Log, TEXT("Health %s of %s"), *FString::SanitizeFloat(Health), *GetName());
+
+	if (Health <= 0.0f)
+	{
+		SelfDestruct();
+	}
 }
 
 void ASTrackerBot::UpdateDynamicMaterial()
@@ -58,6 +70,35 @@ void ASTrackerBot::UpdateDynamicMaterial()
 	{
 		DynamicMaterialToPulseOnDamage->SetScalarParameterValue("LastTimeDamageTaken", GetWorld()->TimeSeconds);
 	}
+}
+
+void ASTrackerBot::SelfDestruct()
+{
+	if (bExploded)
+	{
+		return;
+	}
+	bExploded = true;
+
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, GetActorLocation());
+
+	TArray<AActor*> IgnoredActors;
+	IgnoredActors.Add(this);
+
+	UGameplayStatics::ApplyRadialDamage(
+		this, 
+		ExplosionDamage, 
+		GetActorLocation(), 
+		ExplosionRadius , 
+		nullptr, 
+		IgnoredActors, 
+		this, 
+		GetInstigatorController(), 
+		true);
+
+	DrawDebugSphere(GetWorld(), GetActorLocation(), ExplosionRadius, 12, FColor::Red, false, 2.0f, 0, 1.0f);
+
+	Destroy();
 }
 
 void ASTrackerBot::MoveTowardsTarget()

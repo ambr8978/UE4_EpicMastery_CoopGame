@@ -9,6 +9,7 @@
 class UStaticMeshComponent;
 class USHealthComponent;
 class UMaterialInstanceDynamic;
+class UParticleSystem;
 
 UCLASS()
 class COOPGAME_API ASTrackerBot : public APawn
@@ -36,6 +37,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
 	float RequiredDistanceToTarget;
 
+	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
+	float ExplosionDamage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
+	float ExplosionRadius;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
+	UParticleSystem* ExplosionEffect;
+
 	UMaterialInstanceDynamic* DynamicMaterialToPulseOnDamage;
 	
 	FVector NextPathPoint;
@@ -51,6 +61,8 @@ protected:
 		class AController* InstigatedBy,
 		AActor* DamageCauser);
 private:
+	bool bExploded;
+
 	void SetupHealthComponent();
 	void SetRootComponent();
 	void SetupMeshComponent();
@@ -58,4 +70,5 @@ private:
 	void MoveTowardsTarget();
 	void KeepMovingTowardsTarget();
 	void UpdateDynamicMaterial();
+	void SelfDestruct();
 };
