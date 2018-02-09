@@ -9,11 +9,20 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "DrawDebugHelpers.h"
 #include "Particles/ParticleSystem.h"
+#include "Components/SphereComponent.h"
+#include "SCharacter.h"
 
 const float MOVEMENT_FORCE_DEFAULT = 1000;
 const float REQUIRED_DISTANCE_DEFAULT = 100;
+
 const float SELF_DESTRUCT_RADIAL_DAMAGE = 100;
 const float SELF_DESTRUCT_RADIUS = 200;
+const float SELF_DAMAGE_AMOUNT = 20;
+
+const float TIMER_RATE_DAMAGE_SELF = 0.5f;
+const float TIMER_DELAY_DAMAGE_SELF = 0.0f;
+
+const float SPHERE_COMPONENT_RADIUS = 100;
 
 ASTrackerBot::ASTrackerBot()
 {
@@ -21,12 +30,14 @@ ASTrackerBot::ASTrackerBot()
 	SetupMeshComponent();
 	SetRootComponent();
 	SetupHealthComponent();
+	SetupSphereComponent();
 
 	DynamicMaterialToPulseOnDamage = nullptr;
 	bUseVelocityChange = false;
 	MovementForce = MOVEMENT_FORCE_DEFAULT;
 	RequiredDistanceToTarget = REQUIRED_DISTANCE_DEFAULT;
 	bExploded = false;
+	bStartedSelfDestruction = false;
 	ExplosionDamage = SELF_DESTRUCT_RADIAL_DAMAGE;
 	ExplosionRadius = SELF_DESTRUCT_RADIUS;
 }
@@ -57,6 +68,31 @@ void ASTrackerBot::HandleTakeDamage(
 	{
 		SelfDestruct();
 	}
+}
+
+void ASTrackerBot::NotifyActorBeginOverlap(AActor* OtherActor)
+{
+	if (bStartedSelfDestruction)
+	{
+		return;
+	}
+
+	ASCharacter* PlayerPawn = Cast<ASCharacter>(OtherActor);
+	if (PlayerPawn)
+	{
+		OnPlayerOverlap();
+	}
+}
+
+void ASTrackerBot::OnPlayerOverlap()
+{
+	GetWorldTimerManager().SetTimer(TimerHandle_SelfDamage, this, &ASTrackerBot::DamageSelf, TIMER_RATE_DAMAGE_SELF, true, TIMER_DELAY_DAMAGE_SELF);
+	bStartedSelfDestruction = true;
+}
+
+void ASTrackerBot::DamageSelf()
+{
+	UGameplayStatics::ApplyDamage(this, SELF_DAMAGE_AMOUNT, GetInstigatorController(), this, nullptr);
 }
 
 void ASTrackerBot::UpdateDynamicMaterial()
@@ -138,6 +174,21 @@ void ASTrackerBot::SetupHealthComponent()
 {
 	HealthComponent = CreateDefaultSubobject<USHealthComponent>(TEXT("HealthComponent"));
 	HealthComponent->OnHealthChanged.AddDynamic(this, &ASTrackerBot::HandleTakeDamage);
+}
+
+void ASTrackerBot::SetupSphereComponent()
+{
+	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
+	SphereComponent->SetSphereRadius(SPHERE_COMPONENT_RADIUS);
+	SphereComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+	/*
+	We set up the coliision this way so that we don't register for any collision events that we don't need.
+	This makes it cheaper for the physics engine to deal with and we get less events that we need to handle.
+	*/
+	SphereComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
+	SphereComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	SphereComponent->SetupAttachment(RootComponent);
 }
 
 FVector ASTrackerBot::GetNextPathPoint()
