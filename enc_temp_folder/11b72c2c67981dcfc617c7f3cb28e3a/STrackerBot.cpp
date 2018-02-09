@@ -41,7 +41,7 @@ ASTrackerBot::ASTrackerBot()
 	bStartedSelfDestruction = false;
 	ExplosionDamage = SELF_DESTRUCT_RADIAL_DAMAGE;
 	ExplosionRadius = SELF_DESTRUCT_RADIUS;
-	SelfDamageInterval = TIMER_RATE_DAMAGE_SELF;
+	SelfDamageInterval = SELF_DAMAGE_AMOUNT;
 }
 
 void ASTrackerBot::BeginPlay()
