@@ -33,6 +33,12 @@ void USHealthComponent::CreateTakeDamageHook()
 	}
 }
 
+void USHealthComponent::OnRep_Health(float OldHealth)
+{
+	float Damage = Health - OldHealth;
+	OnHealthChanged.Broadcast(this, Health, Damage, nullptr, nullptr, nullptr);
+}
+
 void USHealthComponent::TakeAnyDamage(
 	AActor* DamagedActor,
 	float Damage,

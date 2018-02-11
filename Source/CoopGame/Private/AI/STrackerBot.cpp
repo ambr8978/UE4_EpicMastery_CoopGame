@@ -47,13 +47,19 @@ ASTrackerBot::ASTrackerBot()
 void ASTrackerBot::BeginPlay()
 {
 	Super::BeginPlay();
-	NextPathPoint = GetNextPathPoint();
+	if (Role == ROLE_Authority)
+	{
+		NextPathPoint = GetNextPathPoint();
+	}
 }
 
 void ASTrackerBot::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	MoveTowardsTarget();
+	if (Role == ROLE_Authority && !bExploded)
+	{
+		MoveTowardsTarget();
+	}
 }
 
 void ASTrackerBot::HandleTakeDamage(
@@ -74,7 +80,7 @@ void ASTrackerBot::HandleTakeDamage(
 
 void ASTrackerBot::NotifyActorBeginOverlap(AActor* OtherActor)
 {
-	if (bStartedSelfDestruction)
+	if (bStartedSelfDestruction || bExploded)
 	{
 		return;
 	}
@@ -88,13 +94,16 @@ void ASTrackerBot::NotifyActorBeginOverlap(AActor* OtherActor)
 
 void ASTrackerBot::OnPlayerOverlap()
 {
-	GetWorldTimerManager().SetTimer(
-		TimerHandle_SelfDamage, 
-		this, 
-		&ASTrackerBot::DamageSelf, 
-		SelfDamageInterval, 
-		true, 
-		TIMER_DELAY_DAMAGE_SELF);
+	if (Role == ROLE_Authority)
+	{
+		GetWorldTimerManager().SetTimer(
+			TimerHandle_SelfDamage,
+			this,
+			&ASTrackerBot::DamageSelf,
+			SelfDamageInterval,
+			true,
+			TIMER_DELAY_DAMAGE_SELF);
+	}
 
 	bStartedSelfDestruction = true;
 	UGameplayStatics::SpawnSoundAttached(SelfDestructSound, RootComponent);
@@ -125,28 +134,42 @@ void ASTrackerBot::SelfDestruct()
 		return;
 	}
 	bExploded = true;
-
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, GetActorLocation());
-
-	TArray<AActor*> IgnoredActors;
-	IgnoredActors.Add(this);
-
-	UGameplayStatics::ApplyRadialDamage(
-		this, 
-		ExplosionDamage, 
-		GetActorLocation(), 
-		ExplosionRadius , 
-		nullptr, 
-		IgnoredActors, 
-		this, 
-		GetInstigatorController(), 
-		true);
-
-	DrawDebugSphere(GetWorld(), GetActorLocation(), ExplosionRadius, 12, FColor::Red, false, 2.0f, 0, 1.0f);
-
 	UGameplayStatics::PlaySoundAtLocation(this, ExplodeSound, GetActorLocation());
+	/*
+	We are hiding the mesh so that the trackerbot still appears to be destroyed, even though
+	it will still be present for a few seconds (see SetLifeSpan call below).
+	*/
+	MeshComponent->SetVisibility(false, true);
+	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	Destroy();
+	if (Role == ROLE_Authority)
+	{
+		TArray<AActor*> IgnoredActors;
+		IgnoredActors.Add(this);
+
+		UGameplayStatics::ApplyRadialDamage(
+			this,
+			ExplosionDamage,
+			GetActorLocation(),
+			ExplosionRadius,
+			nullptr,
+			IgnoredActors,
+			this,
+			GetInstigatorController(),
+			true);
+
+		DrawDebugSphere(GetWorld(), GetActorLocation(), ExplosionRadius, 12, FColor::Red, false, 2.0f, 0, 1.0f);
+
+		/*
+		We set a short life span instead of out right destroying the actor so as to allow the client's
+		SpawnEmitterAtLocation to fire before the actor is destroyed.  Otherwise, there is a race condition
+		between the client receivng and processing the health updates (including spawning an emitter at the 
+		actor location) and the server destroying the actor (which is replicated on both server and client)
+		*/
+		SetLifeSpan(2.0f);
+	}
+
 }
 
 void ASTrackerBot::MoveTowardsTarget()
