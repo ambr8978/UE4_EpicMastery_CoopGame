@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "WorldCollision.h"
+#include "CollisionQueryParams.h"
+#include "Engine/EngineTypes.h"
 #include "STrackerBot.generated.h"
 
 class UStaticMeshComponent;
@@ -27,6 +30,8 @@ public:
 	void OnPlayerOverlap();
 
 protected:
+	int32 PowerLevel;
+
 	UPROPERTY(VisibleDefaultsOnly, Category = "Components")
 	UStaticMeshComponent* MeshComponent;
 
@@ -70,6 +75,16 @@ protected:
 	
 	FVector NextPathPoint;
 	FVector GetNextPathPoint();
+
+	void OnCheckNearbyBots();
+	FCollisionShape CreateNearbyBotsCollisionShape();
+	FCollisionObjectQueryParams GetNearbyBotsCollisionQueryParams();
+	TArray<FOverlapResult> GetOverlappingObjects(FCollisionObjectQueryParams QueryParams, FCollisionShape CollisionShape);
+	int CalculateNumberOverlappingBots(TArray<FOverlapResult> OverlapResults);
+	int CalculatePowerLevel(int NumOverlappingBots);
+
+	void UpdateMaterialBasedOffOfPowerLevel();
+	void InstantiatePowerLevelTimer();
 
 	virtual void BeginPlay() override;
 	UFUNCTION()

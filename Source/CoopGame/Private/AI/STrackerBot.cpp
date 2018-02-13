@@ -25,6 +25,10 @@ const float TIMER_DELAY_DAMAGE_SELF = 0.0f;
 
 const float SPHERE_COMPONENT_RADIUS = 100;
 
+const float NEARBY_BOTS_RADIUS = 600;
+const int32 MAX_POWER_LEVEL = 4;
+const int32 UPDATE_POWER_LEVEL_INTERVAL_SEC = 1.0f;
+
 ASTrackerBot::ASTrackerBot()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -33,6 +37,7 @@ ASTrackerBot::ASTrackerBot()
 	SetupHealthComponent();
 	SetupSphereComponent();
 
+	PowerLevel = 0;
 	DynamicMaterialToPulseOnDamage = nullptr;
 	bUseVelocityChange = false;
 	MovementForce = MOVEMENT_FORCE_DEFAULT;
@@ -50,6 +55,7 @@ void ASTrackerBot::BeginPlay()
 	if (Role == ROLE_Authority)
 	{
 		NextPathPoint = GetNextPathPoint();
+		InstantiatePowerLevelTimer();
 	}
 }
 
@@ -147,10 +153,11 @@ void ASTrackerBot::SelfDestruct()
 	{
 		TArray<AActor*> IgnoredActors;
 		IgnoredActors.Add(this);
+		float ActualDamage = (ExplosionDamage + (ExplosionDamage * PowerLevel));
 
 		UGameplayStatics::ApplyRadialDamage(
 			this,
-			ExplosionDamage,
+			ActualDamage,
 			GetActorLocation(),
 			ExplosionRadius,
 			nullptr,
@@ -164,7 +171,7 @@ void ASTrackerBot::SelfDestruct()
 		/*
 		We set a short life span instead of out right destroying the actor so as to allow the client's
 		SpawnEmitterAtLocation to fire before the actor is destroyed.  Otherwise, there is a race condition
-		between the client receivng and processing the health updates (including spawning an emitter at the 
+		between the client receivng and processing the health updates (including spawning an emitter at the
 		actor location) and the server destroying the actor (which is replicated on both server and client)
 		*/
 		SetLifeSpan(2.0f);
@@ -233,7 +240,7 @@ FVector ASTrackerBot::GetNextPathPoint()
 
 	UNavigationPath* NavPath = UNavigationSystem::FindPathToActorSynchronously(this, GetActorLocation(), (AActor*)PlayerPawn);
 
-	if (NavPath->PathPoints.Num() > 1)
+	if (NavPath && (NavPath->PathPoints.Num() > 1))
 	{
 		//Return next point in path
 		return NavPath->PathPoints[1];
@@ -241,4 +248,99 @@ FVector ASTrackerBot::GetNextPathPoint()
 
 	//Failed to find path
 	return GetActorLocation();
+}
+
+void ASTrackerBot::OnCheckNearbyBots()
+{
+	FCollisionShape CollisionShape = CreateNearbyBotsCollisionShape();
+	FCollisionObjectQueryParams QueryParams = GetNearbyBotsCollisionQueryParams();
+	TArray<FOverlapResult> OverlapResults = GetOverlappingObjects(QueryParams, CollisionShape);
+	DrawDebugSphere(GetWorld(), GetActorLocation(), NEARBY_BOTS_RADIUS, 12, FColor::White, false, 1.0f);
+
+	int NumberOfOverlappingBots = CalculateNumberOverlappingBots(OverlapResults);
+	PowerLevel = CalculatePowerLevel(NumberOfOverlappingBots);
+	UpdateMaterialBasedOffOfPowerLevel();
+}
+
+FCollisionShape ASTrackerBot::CreateNearbyBotsCollisionShape()
+{
+	FCollisionShape CollisionShape;
+	CollisionShape.SetSphere(NEARBY_BOTS_RADIUS);
+	return CollisionShape;
+}
+
+FCollisionObjectQueryParams ASTrackerBot::GetNearbyBotsCollisionQueryParams()
+{
+	FCollisionObjectQueryParams QueryParams;
+	/*
+	Our tracker bot's mesh component is set to Physics Body in BP (defailt profile of physics simulated actors)
+	*/
+	QueryParams.AddObjectTypesToQuery(ECC_PhysicsBody);
+	QueryParams.AddObjectTypesToQuery(ECC_Pawn);
+	return QueryParams;
+}
+
+TArray<FOverlapResult> ASTrackerBot::GetOverlappingObjects(
+	FCollisionObjectQueryParams QueryParams,
+	FCollisionShape CollisionShape)
+{
+	TArray<FOverlapResult> Overlaps;
+	GetWorld()->OverlapMultiByObjectType(
+		Overlaps,
+		GetActorLocation(),
+		FQuat::Identity,
+		QueryParams,
+		CollisionShape);
+
+	return Overlaps;
+}
+
+int ASTrackerBot::CalculateNumberOverlappingBots(TArray<FOverlapResult> OverlapResults)
+{
+	int NumBots = 0;
+	for (FOverlapResult Result : OverlapResults)
+	{
+		ASTrackerBot* Bot = Cast<ASTrackerBot>(Result.GetActor());
+		if (Bot && (Bot != this))
+		{
+			++NumBots;
+		}
+	}
+	return NumBots;
+}
+
+int ASTrackerBot::CalculatePowerLevel(int NumOverlappingBots)
+{
+	return FMath::Clamp(NumOverlappingBots, 0, MAX_POWER_LEVEL);
+}
+
+void ASTrackerBot::UpdateMaterialBasedOffOfPowerLevel()
+{
+	if (DynamicMaterialToPulseOnDamage == nullptr)
+	{
+		DynamicMaterialToPulseOnDamage = MeshComponent->CreateAndSetMaterialInstanceDynamicFromMaterial(0, MeshComponent->GetMaterial(0));
+	}
+
+	if (DynamicMaterialToPulseOnDamage)
+	{
+		/*
+		Convert to a float between 0 and 1 just like an 'Alpha' value of a texture. Now the material can be set up without having to know
+		the max power level, which can be tweaked many times by gameplay decisions (would mean we need to keep 2 places up to date).
+		*/
+		float Alpha = PowerLevel / (float)MAX_POWER_LEVEL;
+		DynamicMaterialToPulseOnDamage->SetScalarParameterValue("PowerLevelAlpha", Alpha);
+	}
+
+	DrawDebugString(GetWorld(), FVector(0, 0, 0), FString::FromInt(PowerLevel), this, FColor::White, 1.0f, true);
+}
+
+void ASTrackerBot::InstantiatePowerLevelTimer()
+{
+	FTimerHandle TimerHandle_CheckPowerLevel;
+	GetWorldTimerManager().SetTimer(
+		TimerHandle_CheckPowerLevel,
+		this,
+		&ASTrackerBot::OnCheckNearbyBots,
+		UPDATE_POWER_LEVEL_INTERVAL_SEC,
+		true);
 }
