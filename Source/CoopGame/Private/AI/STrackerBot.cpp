@@ -86,6 +86,8 @@ void ASTrackerBot::HandleTakeDamage(
 
 void ASTrackerBot::NotifyActorBeginOverlap(AActor* OtherActor)
 {
+	Super::NotifyActorBeginOverlap(OtherActor);
+
 	if (bStartedSelfDestruction || bExploded)
 	{
 		return;
