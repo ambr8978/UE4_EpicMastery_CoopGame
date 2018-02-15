@@ -8,6 +8,7 @@
 
 class USphereComponent;
 class UDecalComponent;
+class ASPowerupActor;
 
 UCLASS()
 class COOPGAME_API ASPickupActor : public AActor
@@ -15,10 +16,8 @@ class COOPGAME_API ASPickupActor : public AActor
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
 	ASPickupActor();
 
-	virtual void Tick(float DeltaTime) override;
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
@@ -27,9 +26,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UDecalComponent* DecalComponent;
 
+	UPROPERTY(EditDefaultsOnly, Category = "PickupActor")
+	TSubclassOf<ASPowerupActor> PowerupClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "PickupActor")
+	float CoolDownDuration;
+
 	virtual void BeginPlay() override;
+	void Respawn();
 
 private:
+	ASPowerupActor* PowerupInstance;
+	FTimerHandle TimerHandle_RespawnTimer;
+
 	void SetupSphereComponent();
 	void SetupDecalComponent();
 	void SetRootComponent();
