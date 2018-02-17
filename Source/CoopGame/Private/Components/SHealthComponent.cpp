@@ -24,6 +24,18 @@ void USHealthComponent::BeginPlay()
 	Health = DefaultHealth;
 }
 
+void USHealthComponent::Heal(float HealAmount)
+{
+	if ((HealAmount <= 0.0f) || (Health <= 0.0f))
+	{
+		return;
+	}
+
+	Health = FMath::Clamp(Health + HealAmount, 0.0f, DefaultHealth);
+	UE_LOG(LogTemp, Log, TEXT("Health Changed: %s (+%s)"), *FString::SanitizeFloat(Health), *FString::SanitizeFloat(HealAmount));
+	OnHealthChanged.Broadcast(this, Health, -HealAmount, nullptr, nullptr, nullptr);
+}
+
 void USHealthComponent::CreateTakeDamageHook()
 {
 	AActor* Owner = GetOwner();
