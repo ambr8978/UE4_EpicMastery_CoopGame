@@ -10,18 +10,24 @@
 const FRotator DEFAULT_ROTATION_DECAL_COMPONENT = FRotator(90, 0.0f, 0.0f);
 const float DEFAULT_RADIUS_SPHERE_COMPONENT = 75.0f;
 const FVector DEFAULT_SIZE_DECAL_COMPONENT = FVector(64, 75, 75);
-const float DEFAULT_COOLDOWN_DURATION = 0.0f;
+const float DEFAULT_COOLDOWN_DURATION = 10.0f;
 
 ASPickupActor::ASPickupActor()
 {
 	SetupSphereComponent();
 	SetupDecalComponent();
+	CoolDownDuration = DEFAULT_COOLDOWN_DURATION;	
+
+	SetReplicates(true);
 }
 
 void ASPickupActor::BeginPlay()
 {
 	Super::BeginPlay();
-	Respawn();
+	if (Role == ROLE_Authority)
+	{
+		Respawn();
+	}
 }
 
 void ASPickupActor::Respawn()
@@ -61,7 +67,7 @@ void ASPickupActor::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
 
-	if (PowerupInstance)
+	if ((Role == ROLE_Authority) && PowerupInstance)
 	{
 		PowerupInstance->ActivatePowerup();
 		PowerupInstance = nullptr;

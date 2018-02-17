@@ -28,6 +28,15 @@ protected:
 	int32 TicksProcessed;
 	FTimerHandle TimerHandle_PowerupTick;
 
+	UPROPERTY(ReplicatedUsing = OnRep_PowerupActive)
+	bool bIsPowerupActive;
+
+	UFUNCTION()
+	void OnRep_PowerupActive();
+
+	UFUNCTION(BlueprintImplementableEvent, Category="Powerup")
+	void OnPowerupStateChanged(bool bNewIsActive);
+
 	/*
 	Time between powerup ticks
 	*/
@@ -39,8 +48,6 @@ protected:
 	*/
 	UPROPERTY(EditDefaultsOnly, Category = "Powerup")
 	int32 TotalNumTicks;
-
-	virtual void BeginPlay() override;
 
 	UFUNCTION()
 	void OnTickPowerup();
