@@ -12,13 +12,16 @@ class COOPGAME_API ASGameMode : public AGameModeBase
 	GENERATED_BODY()
 	
 public:
-	virtual void StartPlay() override;
 	ASGameMode();
+
+	virtual void StartPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 protected:
 	int32 WaveCount;
 	int32 NumBotsToSpawnInCurrentWave;
 	FTimerHandle TimerHandle_BotSpawner;
+	FTimerHandle TimerHandle_NextWaveStart;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GameMode")
 	float TimeBetweenWaves;
@@ -40,10 +43,20 @@ protected:
 	Stop spawning bots
 	*/
 	void EndWave();
+	void GameOver();
 
 	/*
 	Set timer for next startwave
 	*/
 	void PrepareForNextWave();
+
+	void CheckWaveState();
 	
+private:
+	bool IsBotAlive(APawn* Bot);
+	bool IsAnyBotAlive();
+	bool IsAnyPlayerAlive();
+
+	bool BotsStillNeedToBeSpawned();
+	bool NextWavePreparationInProgress();
 };

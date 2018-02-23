@@ -33,6 +33,8 @@ class COOPGAME_API USHealthComponent : public UActorComponent
 public:	
 	USHealthComponent();
 
+	float GetHealth() const;
+
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnHealthChangedSignature OnHealthChanged;
 
