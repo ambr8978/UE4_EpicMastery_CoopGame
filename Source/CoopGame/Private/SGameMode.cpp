@@ -4,10 +4,13 @@
 #include "TimerManager.h"
 #include "Engine/World.h"
 #include "SHealthComponent.h"
+#include "SGameState.h"
 
 ASGameMode::ASGameMode()
 {
 	TimeBetweenWaves = 2.0f;
+
+	GameStateClass = ASGameState::StaticClass();
 
 	WaveCount = 0;
 	PrimaryActorTick.bCanEverTick = true;
@@ -131,4 +134,13 @@ void ASGameMode::GameOver()
 {
 	EndWave();
 	UE_LOG(LogTemp, Log, TEXT("GAME OVER, PLAYERS DIED!"));
+}
+
+void ASGameMode::SetWaveState(EWaveState NewState)
+{
+	ASGameState* GameState = GetGameState<ASGameState>();
+	if (ensureAlways(GameState))
+	{
+		GameState->WaveState = NewState;
+	}
 }

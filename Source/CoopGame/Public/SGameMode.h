@@ -6,6 +6,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "SGameMode.generated.h"
 
+enum class EWaveState : uint8;
+
 UCLASS()
 class COOPGAME_API ASGameMode : public AGameModeBase
 {
@@ -59,4 +61,6 @@ private:
 
 	bool BotsStillNeedToBeSpawned();
 	bool NextWavePreparationInProgress();
+
+	void SetWaveState(EWaveState NewState);
 };
