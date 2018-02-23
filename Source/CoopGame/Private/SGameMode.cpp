@@ -49,16 +49,19 @@ void ASGameMode::StartWave()
 	++WaveCount;
 	NumBotsToSpawnInCurrentWave = 2 * WaveCount;
 	GetWorldTimerManager().SetTimer(TimerHandle_BotSpawner, this, &ASGameMode::SpawnBotTimerElapsed, 1.0f, true, 0.0f);
+	SetWaveState(EWaveState::WaveInProgress);
 }
 
 void ASGameMode::PrepareForNextWave()
 {
 	GetWorldTimerManager().SetTimer(TimerHandle_NextWaveStart, this, &ASGameMode::StartWave, 1.0f, false, 0.0f);
+	SetWaveState(EWaveState::WaitingToStartWave);
 }
 
 void ASGameMode::EndWave()
 {
 	GetWorldTimerManager().ClearTimer(TimerHandle_BotSpawner);
+	SetWaveState(EWaveState::WaitingToCompleteWave);
 }
 
 void ASGameMode::CheckWaveState()
@@ -68,6 +71,7 @@ void ASGameMode::CheckWaveState()
 		return;
 	}
 
+	SetWaveState(EWaveState::WaveComplete);
 	PrepareForNextWave();
 }
 
@@ -133,6 +137,7 @@ bool ASGameMode::IsAnyPlayerAlive()
 void ASGameMode::GameOver()
 {
 	EndWave();
+	SetWaveState(EWaveState::GameOver);
 	UE_LOG(LogTemp, Log, TEXT("GAME OVER, PLAYERS DIED!"));
 }
 
@@ -141,6 +146,6 @@ void ASGameMode::SetWaveState(EWaveState NewState)
 	ASGameState* GameState = GetGameState<ASGameState>();
 	if (ensureAlways(GameState))
 	{
-		GameState->WaveState = NewState;
+		GameState->SetWaveState(NewState);
 	}
 }
