@@ -3,12 +3,14 @@
 #include "SHealthComponent.h"
 #include "GameFramework/Controller.h"
 #include "Net/UnrealNetwork.h"
+#include "SGameMode.h"
 
 const float HEALTH_DEFAULT = 100;
 
 USHealthComponent::USHealthComponent()
 {
 	DefaultHealth = HEALTH_DEFAULT;
+	bIsDead = false;
 	SetIsReplicated(true);
 }
 
@@ -58,23 +60,43 @@ void USHealthComponent::TakeAnyDamage(
 	class AController* DamageInstigator,
 	AActor* DamageCauser)
 {
-	if (Damage <= 0.0f)
+	if (Damage <= 0.0f || bIsDead)
 	{
 		return;
 	}
 
-	ApplyDamage(Damage, DamageType, DamageInstigator, DamageCauser);
+	ApplyDamage(Damage);
+	BroadcastHealthChange(Damage, DamageType, DamageInstigator, DamageCauser);
 }
 
-void USHealthComponent::ApplyDamage(
+void USHealthComponent::ApplyDamage(float Damage)
+{
+	Health = FMath::Clamp(Health - Damage, 0.0f, DefaultHealth);
+	bIsDead = (Health <= 0.0f);
+	UE_LOG(LogTemp, Log, TEXT("Health Changed: %s, is dead:%d"), *FString::SanitizeFloat(Health), bIsDead);
+}
+
+void USHealthComponent::BroadcastHealthChange(
 	float Damage,
 	const UDamageType* DamageType,
 	AController* DamageInstigator,
 	AActor* DamageCauser)
 {
-	Health = FMath::Clamp(Health - Damage, 0.0f, DefaultHealth);
-	UE_LOG(LogTemp, Log, TEXT("Health Changed: %s"), *FString::SanitizeFloat(Health));
 	OnHealthChanged.Broadcast(this, Health, Damage, DamageType, DamageInstigator, DamageCauser);
+
+	if (bIsDead)
+	{
+		BroadcastDeath(DamageCauser, DamageInstigator);
+	}
+}
+
+void USHealthComponent::BroadcastDeath(AActor* DamageCauser, AController* DamageInstigator)
+{
+	ASGameMode* GameMode = Cast<ASGameMode>(GetWorld()->GetAuthGameMode());
+	if (GameMode)
+	{
+		GameMode->OnActorKilled.Broadcast(GetOwner(), DamageCauser, DamageInstigator);
+	}
 }
 
 void USHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

@@ -42,6 +42,8 @@ public:
 	void Heal(float HealAmount);
 
 protected:
+	bool bIsDead;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HealthComponent")
 	float DefaultHealth;
 
@@ -62,10 +64,14 @@ protected:
 		class AController* DamageInstigator,
 		AActor* DamageCauser);
 	
-	void ApplyDamage(
+	void ApplyDamage(float Damage);
+
+	void BroadcastHealthChange(
 		float Damage,
 		const UDamageType* DamageType,
 		AController* DamageInstigator,
 		AActor* DamageCauser);
+
+	void BroadcastDeath(AActor* DamageCauser, AController* DamageInstigator);
 
 };
