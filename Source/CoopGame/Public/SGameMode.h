@@ -67,4 +67,6 @@ private:
 	bool NextWavePreparationInProgress();
 
 	void SetWaveState(EWaveState NewState);
+
+	void RespawnDeadPlayers();
 };

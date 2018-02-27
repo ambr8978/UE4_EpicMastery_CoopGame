@@ -58,6 +58,7 @@ void ASGameMode::PrepareForNextWave()
 {
 	GetWorldTimerManager().SetTimer(TimerHandle_NextWaveStart, this, &ASGameMode::StartWave, 1.0f, false, 0.0f);
 	SetWaveState(EWaveState::WaitingToStartWave);
+	RespawnDeadPlayers();
 }
 
 void ASGameMode::EndWave()
@@ -149,5 +150,21 @@ void ASGameMode::SetWaveState(EWaveState NewState)
 	if (ensureAlways(GameState))
 	{
 		GameState->SetWaveState(NewState);
+	}
+}
+
+void ASGameMode::RespawnDeadPlayers()
+{
+	for (FConstPlayerControllerIterator Itr = GetWorld()->GetPlayerControllerIterator(); Itr; ++Itr)
+	{
+		APlayerController* PlayerController = Itr->Get();
+		/*
+		We check to see if the player controller pawn is null because that means that the player has
+		died and depossesed their pawn
+		*/
+		if (PlayerController && (PlayerController->GetPawn() == nullptr))
+		{
+			RestartPlayer(PlayerController);
+		}
 	}
 }
