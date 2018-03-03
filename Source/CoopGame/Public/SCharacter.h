@@ -24,6 +24,12 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UFUNCTION(BlueprintCallable, Category="Player")
+	void StartFire();
+
+	UFUNCTION(BlueprintCallable, Category = "Player")
+	void StopFire();
 	
 protected:
 	bool bWantsToZoom;
@@ -59,9 +65,6 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual FVector GetPawnViewLocation() const override;
-
-	void StartFire();
-	void StopFire();
 
 	void MoveForward(float MovementValue);
 	void MoveRight(float MovementValue);
