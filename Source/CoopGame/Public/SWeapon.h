@@ -72,6 +72,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	float RateOfFire;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon", meta = (ClampMin=0.0f))
+	float BulletSpreadAngleDegrees;
+
 	FTimerHandle TimerHandle_TimeBetweenShots;
 
 	UPROPERTY(ReplicatedUsing=OnRep_HitScanTrace)
@@ -102,4 +105,6 @@ private:
 	void SpawnMuzzleEffect();
 	void SpawnTraceEffect(FVector TraceEndPoint);
 	void PlayWeaponShakeAnimation();
+
+	FVector GetShotDirectionWithBulletSpreadApplied(FVector ShotDirection);
 };

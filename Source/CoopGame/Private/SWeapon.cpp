@@ -24,6 +24,10 @@ const float LINE_TRACE_THICKNESS = 1.0f;
 
 const float DAMAGE_HEADSHOT_MULTIPLIER = 4;
 
+const float BASE_DAMAGE_DEFAULT = 20.0f;
+const float RATE_OF_FIRE_DEFAULT = 600.0f;
+const float BULLET_SPREAD_ANGLE_DEFAULT = 2.0f;
+
 /*
 Check out Lecture 88, around the 8:30 mark for more of a breakdown
 */
@@ -46,8 +50,9 @@ ASWeapon::ASWeapon()
 	MuzzleSocketName = "MuzzleSocket";
 	TracerTargetName = "Target";
 
-	BaseDamage = 20.0f;
-	RateOfFire = 600.0f;
+	BaseDamage = BASE_DAMAGE_DEFAULT;
+	RateOfFire = RATE_OF_FIRE_DEFAULT;
+	BulletSpreadAngleDegrees = BULLET_SPREAD_ANGLE_DEFAULT;
 
 	NetUpdateFrequency = NET_UPDATE_FREQ_DEFAULT_TICS_PER_SEC;
 	MinNetUpdateFrequency = MIN_NET_UPDATE_FREQ_TICS_PER_SEC;
@@ -121,10 +126,11 @@ void ASWeapon::ProcessLineTrace(AActor* OwnerActor)
 	FRotator EyeRotation;
 	OwnerActor->GetActorEyesViewPoint(EyeLocation, EyeRotation);
 	FVector ShotDirection = EyeRotation.Vector();
+	ShotDirection = GetShotDirectionWithBulletSpreadApplied(ShotDirection);
 	FVector TraceEnd = EyeLocation + (ShotDirection * LINE_TRACE_LENGTH);
 	FVector TraceEndPoint = TraceEnd;
 	EPhysicalSurface SurfaceHit = SurfaceType_Default;
-
+		
 	FHitResult HitResult;
 	bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(
 		HitResult,
@@ -283,4 +289,14 @@ void ASWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME_CONDITION(ASWeapon, HitScanTrace, COND_SkipOwner);
+}
+
+FVector ASWeapon::GetShotDirectionWithBulletSpreadApplied(FVector ShotDirection)
+{
+	FVector NewShotDirection;
+	float BulletSpreadHalfAngleRadians = FMath::DegreesToRadians(BulletSpreadAngleDegrees);
+
+	NewShotDirection = FMath::VRandCone(ShotDirection, BulletSpreadHalfAngleRadians, BulletSpreadHalfAngleRadians);
+
+	return NewShotDirection;
 }
