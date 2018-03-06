@@ -33,6 +33,16 @@ class COOPGAME_API USHealthComponent : public UActorComponent
 public:	
 	USHealthComponent();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HealthComponent")
+	uint8 TeamNum;
+
+	/*
+	BlueprintPure allows us to not have to pass the white execution pin into
+	this function call when using it in BP which makes it a little easier to use.
+	*/
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="HealthComponent")
+	static bool IsFriendly(AActor* FirstActor, AActor* SecondActor);
+
 	float GetHealth() const;
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")

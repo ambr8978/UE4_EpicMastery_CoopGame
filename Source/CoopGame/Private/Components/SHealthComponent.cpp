@@ -6,10 +6,12 @@
 #include "SGameMode.h"
 
 const float HEALTH_DEFAULT = 100;
+const uint8 TEAM_NUM_DEFAULT = 255;
 
 USHealthComponent::USHealthComponent()
 {
 	DefaultHealth = HEALTH_DEFAULT;
+	TeamNum = TEAM_NUM_DEFAULT;
 	bIsDead = false;
 	SetIsReplicated(true);
 }
@@ -65,6 +67,11 @@ void USHealthComponent::TakeAnyDamage(
 		return;
 	}
 
+	if ((DamageCauser != DamagedActor) && IsFriendly(DamagedActor, DamageCauser))
+	{
+		return;
+	}
+
 	ApplyDamage(Damage);
 	BroadcastHealthChange(Damage, DamageType, DamageInstigator, DamageCauser);
 }
@@ -108,4 +115,28 @@ void USHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 float USHealthComponent::GetHealth() const
 {
 	return Health;
+}
+
+bool USHealthComponent::IsFriendly(AActor* FirstActor, AActor* SecondActor)
+{
+	if (FirstActor == nullptr || SecondActor == nullptr)
+	{
+		/*	
+		Assume friendly
+		*/
+		return true;
+	}
+
+	USHealthComponent* FirstHealthComponent = Cast<USHealthComponent>(FirstActor->GetComponentByClass(USHealthComponent::StaticClass()));
+	USHealthComponent* SecondHealthComponent = Cast<USHealthComponent>(SecondActor->GetComponentByClass(USHealthComponent::StaticClass()));
+	if (FirstHealthComponent == nullptr || SecondHealthComponent == nullptr)
+	{
+		/*
+		Assume that if thge other actor does not have a health component,
+		then he must not explicitly	be an enemy.
+		*/
+		return true;
+	}
+
+	return (FirstHealthComponent->TeamNum == SecondHealthComponent->TeamNum);
 }

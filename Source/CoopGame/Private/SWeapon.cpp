@@ -180,7 +180,7 @@ void ASWeapon::ProcessDamage(FHitResult HitResult, FVector ShotDirection, AContr
 		ShotDirection,
 		HitResult,
 		InstigatorController,
-		this,
+		GetOwner(),
 		DamageType);
 }
 
