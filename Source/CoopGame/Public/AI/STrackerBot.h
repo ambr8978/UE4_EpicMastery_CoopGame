@@ -98,6 +98,7 @@ protected:
 private:
 	bool bStartedSelfDestruction;
 	bool bExploded;
+	FTimerHandle TimerHandle_RefreshPath;
 
 	void SetupHealthComponent();
 	void SetRootComponent();
@@ -108,4 +109,8 @@ private:
 	void KeepMovingTowardsTarget();
 	void UpdateDynamicMaterial();
 	void SelfDestruct();
+
+	AActor* GetNearestTarget();
+	void StartPathFindingRefreshTimer();
+	void RefreshPath();
 };
